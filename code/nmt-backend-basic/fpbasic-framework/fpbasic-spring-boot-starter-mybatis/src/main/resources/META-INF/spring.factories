@@ -1,0 +1,2 @@
+org.springframework.boot.env.EnvironmentPostProcessor=\
+  cn.fengp.basic.framework.mybatis.config.IdTypeEnvironmentPostProcessor

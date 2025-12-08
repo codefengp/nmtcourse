@@ -1,0 +1,30 @@
+package cn.fengp.basic.module.infra.dal.mysql.demo;
+
+import java.util.*;
+
+import cn.fengp.basic.framework.common.pojo.PageResult;
+import cn.fengp.basic.framework.common.pojo.PageParam;
+import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.fengp.basic.framework.mybatis.core.mapper.BaseMapperX;
+import cn.fengp.basic.module.infra.dal.dataobject.demo.InfraStudentTeacherDO;
+import org.apache.ibatis.annotations.Mapper;
+
+/**
+ * 学生班主任 Mapper
+ *
+ * @author 芋道源码
+ */
+@Mapper
+public interface InfraStudentTeacherMapper extends BaseMapperX<InfraStudentTeacherDO> {
+
+    default PageResult<InfraStudentTeacherDO> selectPage(PageParam reqVO, Long studentId) {
+        return selectPage(reqVO, new LambdaQueryWrapperX<InfraStudentTeacherDO>()
+            .eq(InfraStudentTeacherDO::getStudentId, studentId)
+            .orderByDesc(InfraStudentTeacherDO::getId));
+    }
+
+    default int deleteByStudentId(Long studentId) {
+        return delete(InfraStudentTeacherDO::getStudentId, studentId);
+    }
+
+}

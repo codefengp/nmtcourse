@@ -1,0 +1,3 @@
+cn.fengp.basic.framework.security.config.FpbasicSecurityAutoConfiguration
+cn.fengp.basic.framework.security.config.FpbasicWebSecurityConfigurerAdapter
+cn.fengp.basic.framework.operatelog.config.FpbasicOperateLogConfiguration

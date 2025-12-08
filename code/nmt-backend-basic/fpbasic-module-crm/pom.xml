@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>cn.fengp.boot</groupId>
+        <artifactId>fpbasic</artifactId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>fpbasic-module-crm</artifactId>
+    <packaging>jar</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        crm 包下，客户关系管理（Customer Relationship Management）。
+        例如说：客户、联系人、商机、合同、回款等等
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-module-system</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-module-infra</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-module-bpm</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- 业务组件 -->
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-spring-boot-starter-biz-ip</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-spring-boot-starter-biz-tenant</artifactId>
+        </dependency>
+
+        <!-- Web 相关 -->
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- DB 相关 -->
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-spring-boot-starter-mybatis</artifactId>
+        </dependency>
+
+        <!-- 工具类相关 -->
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-spring-boot-starter-excel</artifactId>
+        </dependency>
+
+        <!-- Test 测试相关 -->
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-spring-boot-starter-test</artifactId>
+        </dependency>
+    </dependencies>
+</project>

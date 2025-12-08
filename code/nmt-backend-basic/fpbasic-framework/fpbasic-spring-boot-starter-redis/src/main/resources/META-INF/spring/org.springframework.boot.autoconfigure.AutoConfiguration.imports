@@ -1,0 +1,2 @@
+cn.fengp.basic.framework.redis.config.FpbasicRedisAutoConfiguration
+cn.fengp.basic.framework.redis.config.FpbasicCacheAutoConfiguration

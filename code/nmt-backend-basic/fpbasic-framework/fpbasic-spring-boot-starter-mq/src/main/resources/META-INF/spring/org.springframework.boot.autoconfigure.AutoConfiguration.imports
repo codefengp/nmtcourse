@@ -1,0 +1,3 @@
+cn.fengp.basic.framework.mq.redis.config.FpbasicRedisMQProducerAutoConfiguration
+cn.fengp.basic.framework.mq.redis.config.FpbasicRedisMQConsumerAutoConfiguration
+cn.fengp.basic.framework.mq.rabbitmq.config.FpbasicRabbitMQAutoConfiguration

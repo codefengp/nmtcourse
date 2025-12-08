@@ -1,0 +1,3 @@
+cn.fengp.basic.framework.datasource.config.FpbasicDataSourceAutoConfiguration
+cn.fengp.basic.framework.mybatis.config.FpbasicMybatisAutoConfiguration
+cn.fengp.basic.framework.translate.config.FpbasicTranslateAutoConfiguration

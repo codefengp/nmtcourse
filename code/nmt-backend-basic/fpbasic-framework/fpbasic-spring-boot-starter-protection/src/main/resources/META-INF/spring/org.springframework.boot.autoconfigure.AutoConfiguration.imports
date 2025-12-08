@@ -1,0 +1,4 @@
+cn.fengp.basic.framework.idempotent.config.FpbasicIdempotentConfiguration
+cn.fengp.basic.framework.lock4j.config.FpbasicLock4jConfiguration
+cn.fengp.basic.framework.ratelimiter.config.FpbasicRateLimiterConfiguration
+cn.fengp.basic.framework.signature.config.FpbasicApiSignatureAutoConfiguration

@@ -1,0 +1,7 @@
+cn.fengp.basic.framework.apilog.config.FpbasicApiLogAutoConfiguration
+cn.fengp.basic.framework.jackson.config.FpbasicJacksonAutoConfiguration
+cn.fengp.basic.framework.swagger.config.FpbasicSwaggerAutoConfiguration
+cn.fengp.basic.framework.web.config.FpbasicWebAutoConfiguration
+cn.fengp.basic.framework.xss.config.FpbasicXssAutoConfiguration
+cn.fengp.basic.framework.banner.config.FpbasicBannerAutoConfiguration
+cn.fengp.basic.framework.encrypt.config.FpbasicApiEncryptAutoConfiguration

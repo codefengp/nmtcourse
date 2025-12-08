@@ -1,0 +1,2 @@
+cn.fengp.basic.framework.tracer.config.FpbasicTracerAutoConfiguration
+cn.fengp.basic.framework.tracer.config.FpbasicMetricsAutoConfiguration

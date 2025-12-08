@@ -1,0 +1,1 @@
+package cn.fengp.basic.module.crm.framework.permission.core;

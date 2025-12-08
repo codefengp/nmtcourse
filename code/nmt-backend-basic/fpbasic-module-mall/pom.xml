@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>fpbasic</artifactId>
+        <groupId>cn.fengp.boot</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>fpbasic-module-mall</artifactId>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+
+    <description>
+        商城大模块，由 product 商品、promotion 营销、trade 交易、statistics 统计等组成
+    </description>
+    <modules>
+        <module>fpbasic-module-product</module>
+        <module>fpbasic-module-promotion</module>
+        <module>fpbasic-module-trade</module>
+        <module>fpbasic-module-statistics</module>
+        <!--
+            特殊：为什么会有 fpbasic-module-trade-api 呢？
+                fpbasic-module-promotion 和 fpbasic-module-trade 之间相互循环依赖，所以抽出 fpbasic-module-trade-api 模块，这样：
+                1. fpbasic-module-promotion 依赖 fpbasic-module-trade-api
+                2. fpbasic-module-trade 依赖 fpbasic-module-promotion
+            从而不存在相互（循环）依赖，即 fpbasic-module-trade => fpbasic-module-promotion => fpbasic-module-trade-api
+         -->
+        <module>fpbasic-module-trade-api</module>
+    </modules>
+
+</project>
