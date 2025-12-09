@@ -113,6 +113,13 @@ export enum DICT_TYPE {
   TERMINAL = 'terminal', // 终端
   DATE_INTERVAL = 'date_interval', // 数据间隔
 
+  // ========== NMT 模块 ==========
+  NMT_MAJOR_TYPE = 'nmt_major_type',
+  NMT_COURSE_TYPE = 'nmt_course_type',
+  NMT_COURSE_PROPERTY = 'nmt_course_property',
+  NMT_TERM = 'nmt_term',
+
+
   // ========== SYSTEM 模块 ==========
   SYSTEM_USER_SEX = 'system_user_sex',
   SYSTEM_MENU_TYPE = 'system_menu_type',

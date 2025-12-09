@@ -169,6 +169,7 @@ logging:
     name: ${user.home}/logs/${spring.application.name}.log # 日志文件名，全路径
   level:
     # 配置自己写的 MyBatis Mapper 打印日志
+    cn.fengp.basic.module.nmt.dal.mysql: debug
     cn.fengp.basic.module.bpm.dal.mysql: debug
     cn.fengp.basic.module.infra.dal.mysql: debug
     cn.fengp.basic.module.infra.dal.mysql.logger.ApiErrorLogMapper: INFO # 配置 ApiErrorLogMapper 的日志级别为 info，避免和 GlobalExceptionHandler 重复打印

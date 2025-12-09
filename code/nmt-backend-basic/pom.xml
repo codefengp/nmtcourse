@@ -16,6 +16,7 @@
         <module>fpbasic-module-system</module>
         <module>fpbasic-module-infra</module>
         <module>fpbasic-module-demo</module>
+        <module>fpbasic-module-nmt</module>
         <!--        <module>fpbasic-module-member</module>-->
 <!--        <module>fpbasic-module-bpm</module>-->
 <!--        <module>fpbasic-module-report</module>-->

@@ -36,6 +36,11 @@
             <artifactId>fpbasic-module-demo</artifactId>
             <version>${revision}</version>
         </dependency>
+        <dependency>
+            <groupId>cn.fengp.boot</groupId>
+            <artifactId>fpbasic-module-nmt</artifactId>
+            <version>${revision}</version>
+        </dependency>
 
         <!-- 会员中心。默认注释，保证编译速度 -->
 <!--        <dependency>-->
