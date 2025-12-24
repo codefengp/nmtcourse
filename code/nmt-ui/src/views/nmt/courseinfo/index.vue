@@ -193,6 +193,14 @@
           <el-button
             link
             type="primary"
+            @click="courseOutline(scope.row.id)"
+            v-hasPermi="['nmt:course-info:update']"
+          >
+            课程大纲
+          </el-button>
+          <el-button
+            link
+            type="primary"
             @click="openForm('update', scope.row.id)"
             v-hasPermi="['nmt:course-info:update']"
           >
@@ -235,6 +243,7 @@ defineOptions({ name: 'CourseInfo' })
 
 const message = useMessage() // 消息弹窗
 const { t } = useI18n() // 国际化
+const { push } = useRouter()
 
 const loading = ref(true) // 列表的加载中
 const list = ref<CourseInfo[]>([]) // 列表的数据
@@ -328,6 +337,14 @@ const handleExport = async () => {
   } finally {
     exportLoading.value = false
   }
+}
+
+/**
+ * 课程大纲
+ */
+const courseOutline = (id: number) => {
+  // 跳转页面并设置请求参数，使用 `query` 属性
+  push('/course/course-detail/outline?id=' + id)
 }
 
 /** 初始化 **/

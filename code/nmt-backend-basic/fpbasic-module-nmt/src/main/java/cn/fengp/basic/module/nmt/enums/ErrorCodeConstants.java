@@ -6,4 +6,5 @@ import cn.fengp.basic.framework.common.exception.ErrorCode;
 // ========== 课程基本信息 TODO 补充编号 ==========
 public interface ErrorCodeConstants {
     ErrorCode COURSE_INFO_NOT_EXISTS = new ErrorCode(1_010_000_001, "课程基本信息不存在");
+    ErrorCode COURSE_OBJECTIVE_NOT_EXISTS = new ErrorCode(1_010_000_002, "课程目标不存在");
 }
