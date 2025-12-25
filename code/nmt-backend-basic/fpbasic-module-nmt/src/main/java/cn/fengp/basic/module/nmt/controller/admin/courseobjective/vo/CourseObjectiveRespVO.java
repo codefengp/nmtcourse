@@ -13,7 +13,7 @@ public class CourseObjectiveRespVO {
 
     @Schema(description = "主键ID", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("主键ID")
-    private Integer id;
+    private Long id;
 
     @Schema(description = "名称", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("名称")
@@ -29,6 +29,6 @@ public class CourseObjectiveRespVO {
 
     @Schema(description = "课程ID", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("课程ID")
-    private Integer courseId;
+    private Long courseId;
 
-}
+}

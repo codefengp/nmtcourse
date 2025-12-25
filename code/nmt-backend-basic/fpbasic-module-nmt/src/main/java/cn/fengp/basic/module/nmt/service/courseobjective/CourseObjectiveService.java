@@ -1,11 +1,12 @@
 package cn.fengp.basic.module.nmt.service.courseobjective;
 
-import java.util.*;
-import jakarta.validation.*;
-import cn.fengp.basic.module.nmt.controller.admin.courseobjective.vo.*;
-import cn.fengp.basic.module.nmt.dal.dataobject.courseobjective.CourseObjectiveDO;
 import cn.fengp.basic.framework.common.pojo.PageResult;
-import cn.fengp.basic.framework.common.pojo.PageParam;
+import cn.fengp.basic.module.nmt.controller.admin.courseobjective.vo.CourseObjectivePageReqVO;
+import cn.fengp.basic.module.nmt.controller.admin.courseobjective.vo.CourseObjectiveSaveReqVO;
+import cn.fengp.basic.module.nmt.dal.dataobject.courseobjective.CourseObjectiveDO;
+import jakarta.validation.Valid;
+
+import java.util.List;
 
 /**
  * 课程目标 Service 接口
@@ -20,7 +21,7 @@ public interface CourseObjectiveService {
      * @param createReqVO 创建信息
      * @return 编号
      */
-    Integer createCourseObjective(@Valid CourseObjectiveSaveReqVO createReqVO);
+    Long createCourseObjective(@Valid CourseObjectiveSaveReqVO createReqVO);
 
     /**
      * 更新课程目标
@@ -34,14 +35,14 @@ public interface CourseObjectiveService {
      *
      * @param id 编号
      */
-    void deleteCourseObjective(Integer id);
+    void deleteCourseObjective(Long id);
 
     /**
     * 批量删除课程目标
     *
     * @param ids 编号
     */
-    void deleteCourseObjectiveListByIds(List<Integer> ids);
+    void deleteCourseObjectiveListByIds(List<Long> ids);
 
     /**
      * 获得课程目标
@@ -49,7 +50,7 @@ public interface CourseObjectiveService {
      * @param id 编号
      * @return 课程目标
      */
-    CourseObjectiveDO getCourseObjective(Integer id);
+    CourseObjectiveDO getCourseObjective(Long id);
 
     /**
      * 获得课程目标分页

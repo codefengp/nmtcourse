@@ -33,7 +33,7 @@ public class CourseObjectiveServiceImpl implements CourseObjectiveService {
     private CourseObjectiveMapper courseObjectiveMapper;
 
     @Override
-    public Integer createCourseObjective(CourseObjectiveSaveReqVO createReqVO) {
+    public Long createCourseObjective(CourseObjectiveSaveReqVO createReqVO) {
         // 插入
         CourseObjectiveDO courseObjective = BeanUtils.toBean(createReqVO, CourseObjectiveDO.class);
         courseObjectiveMapper.insert(courseObjective);
@@ -52,7 +52,7 @@ public class CourseObjectiveServiceImpl implements CourseObjectiveService {
     }
 
     @Override
-    public void deleteCourseObjective(Integer id) {
+    public void deleteCourseObjective(Long id) {
         // 校验存在
         validateCourseObjectiveExists(id);
         // 删除
@@ -60,20 +60,20 @@ public class CourseObjectiveServiceImpl implements CourseObjectiveService {
     }
 
     @Override
-        public void deleteCourseObjectiveListByIds(List<Integer> ids) {
+        public void deleteCourseObjectiveListByIds(List<Long> ids) {
         // 删除
         courseObjectiveMapper.deleteByIds(ids);
         }
 
 
-    private void validateCourseObjectiveExists(Integer id) {
+    private void validateCourseObjectiveExists(Long id) {
         if (courseObjectiveMapper.selectById(id) == null) {
             throw exception(COURSE_OBJECTIVE_NOT_EXISTS);
         }
     }
 
     @Override
-    public CourseObjectiveDO getCourseObjective(Integer id) {
+    public CourseObjectiveDO getCourseObjective(Long id) {
         return courseObjectiveMapper.selectById(id);
     }
 

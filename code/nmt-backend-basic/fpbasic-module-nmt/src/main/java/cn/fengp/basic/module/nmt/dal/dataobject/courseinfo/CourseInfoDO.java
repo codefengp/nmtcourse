@@ -28,7 +28,7 @@ public class CourseInfoDO extends BaseDO {
      * 主键ID
      */
     @TableId
-    private Integer id;
+    private Long id;
     /**
      * 编号
      */

@@ -162,6 +162,72 @@
     </el-form>
   </el-card>
 
+  <el-card class="course-card">
+    <template #header>
+      <span class="card-title">课程考核方式</span>
+    </template>
+    <el-button
+        type="primary"
+        round
+        class="button-add"
+        @click="addMode"
+    >
+      新增考核方式
+    </el-button>
+    <el-form ref="formRef" :model="modeForm">
+      <el-row
+          v-for="(item, index) in modeForm.modes"
+          :key="item.id"
+          :gutter="20"
+          style="margin-bottom: 12px"
+      >
+        <!-- 目标名 -->
+        <el-col :span="20">
+          <el-form-item
+              label="考核名称"
+              label-width="100px"
+              :prop="`modes.${index}.name`"
+              :rules="[{ required: true, message: '请输入考核名', trigger: 'blur' }]"
+          >
+            <el-input
+                v-model="item.name"
+                placeholder="请输入考核评价名称"
+                @blur="saveMode(item)"
+            />
+          </el-form-item>
+        </el-col>
+
+        <!-- 期望值 + 删除 -->
+        <el-col :span="4">
+          <el-form-item
+              label="权重(%)"
+              label-width="100px"
+              :prop="`modes.${index}.weight`"
+              :rules="[{ required: true, message: '请输入权重', trigger: 'change' }]"
+          >
+            <el-input-number
+                v-model="item.weight"
+                :min="1"
+                :max="100"
+                :step="1"
+                controls-position="right"
+                @change="saveMode(item)"
+            />
+
+            <el-button
+                type="danger"
+                round
+                style="margin-left: 20px"
+                @click="removeMode(item.id)"
+            >
+              删除
+            </el-button>
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
+  </el-card>
+
 
 </template>
 
@@ -169,6 +235,7 @@
 import {DICT_TYPE, getDictLabel} from '@/utils/dict'
 import { CourseInfoApi } from '@/api/nmt/courseinfo'
 import { CourseObjectiveApi,CourseObjective } from '@/api/nmt/courseobjective'
+import { EvaluateModeApi,EvaluateMode} from "@/api/nmt/evaluatemode";
 
 /** 课程大纲 列表 */
 defineOptions({ name: 'CourseOutline' })
@@ -231,7 +298,7 @@ const reloadObjectList = async () => {
 
 /** 自动保存 */
 const saveObject = async (row: CourseObjective) => {
-  if (!row.name || !row.content) return
+  if (!row.name || !row.content || !row.expectValue) return
   await CourseObjectiveApi.updateCourseObjective(row)
 }
 
@@ -255,19 +322,77 @@ const removeObject = async (id: number) => {
     })
 }
 
+
+/** 3.考核评价方式*/
+const modeForm = reactive<{
+  modes: EvaluateMode[]
+}>({
+  modes: []
+})
+
+/** 新增：直接入库，name 为空让用户填 */
+const addMode = async () => {
+  await EvaluateModeApi.createEvaluateMode({
+    courseId,
+    name: '考核方式',
+    weight: 1
+  } as EvaluateMode)
+
+  await reloadModeList()
+}
+
+/** 列表数据 */
+const reloadModeList = async () => {
+  const res = await EvaluateModeApi.getEvaluateModePage({
+    courseId,
+    pageNo: 1,
+    pageSize: 100
+
+  })
+  modeForm.modes = res.list || []
+}
+
+/** 自动保存 */
+const saveMode = async (row: EvaluateMode) => {
+  if (!row.name || !row.weight) return
+  await EvaluateModeApi.updateEvaluateMode(row)
+}
+
+/** 删除 */
+const removeMode = async (id: number) => {
+  ElMessageBox.confirm(
+      '确认删除该评价方式吗？',
+      '删除确认',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+  )
+      .then(async () => {
+        await EvaluateModeApi.deleteEvaluateMode(id)
+        modeForm.modes = modeForm.modes.filter(i => i.id !== id)
+        ElMessage.success('删除评级方式成功')
+      })
+      .catch(() => {
+      })
+}
+
 /** 初始化 **/
 onMounted(async () => {
     //1.课程详情
     await getDetail(courseId)
     //2.课程目标
     await reloadObjectList()
+    //3.考核评价方式
+    await reloadModeList()
 })
 </script>
 
 <style scoped>
 .course-card {
     width: 100%;
-    margin-bottom: 2%;
+    margin-bottom: 1%;
 }
 
 .card-title {

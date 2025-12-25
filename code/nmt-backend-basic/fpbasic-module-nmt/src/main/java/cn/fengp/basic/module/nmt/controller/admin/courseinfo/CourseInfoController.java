@@ -41,7 +41,7 @@ public class CourseInfoController {
     @PostMapping("/create")
     @Operation(summary = "创建课程信息")
     @PreAuthorize("@ss.hasPermission('nmt:course-info:create')")
-    public CommonResult<Integer> createCourseInfo(@Valid @RequestBody CourseInfoSaveReqVO createReqVO) {
+    public CommonResult<Long> createCourseInfo(@Valid @RequestBody CourseInfoSaveReqVO createReqVO) {
         return success(courseInfoService.createCourseInfo(createReqVO));
     }
 
@@ -57,7 +57,7 @@ public class CourseInfoController {
     @Operation(summary = "删除课程信息")
     @Parameter(name = "id", description = "编号", required = true)
     @PreAuthorize("@ss.hasPermission('nmt:course-info:delete')")
-    public CommonResult<Boolean> deleteCourseInfo(@RequestParam("id") Integer id) {
+    public CommonResult<Boolean> deleteCourseInfo(@RequestParam("id") Long id) {
         courseInfoService.deleteCourseInfo(id);
         return success(true);
     }
@@ -66,7 +66,7 @@ public class CourseInfoController {
     @Parameter(name = "ids", description = "编号", required = true)
     @Operation(summary = "批量删除课程信息")
                 @PreAuthorize("@ss.hasPermission('nmt:course-info:delete')")
-    public CommonResult<Boolean> deleteCourseInfoList(@RequestParam("ids") List<Integer> ids) {
+    public CommonResult<Boolean> deleteCourseInfoList(@RequestParam("ids") List<Long> ids) {
         courseInfoService.deleteCourseInfoListByIds(ids);
         return success(true);
     }
@@ -75,7 +75,7 @@ public class CourseInfoController {
     @Operation(summary = "获得课程信息")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('nmt:course-info:query')")
-    public CommonResult<CourseInfoRespVO> getCourseInfo(@RequestParam("id") Integer id) {
+    public CommonResult<CourseInfoRespVO> getCourseInfo(@RequestParam("id") Long id) {
         CourseInfoDO courseInfo = courseInfoService.getCourseInfo(id);
         return success(BeanUtils.toBean(courseInfo, CourseInfoRespVO.class));
     }

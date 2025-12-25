@@ -27,7 +27,7 @@ public class CourseObjectiveDO extends BaseDO {
      * 主键ID
      */
     @TableId
-    private Integer id;
+    private Long id;
     /**
      * 名称
      */
@@ -43,7 +43,7 @@ public class CourseObjectiveDO extends BaseDO {
     /**
      * 课程ID
      */
-    private Integer courseId;
+    private Long courseId;
 
 
-}
+}

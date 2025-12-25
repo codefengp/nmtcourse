@@ -1,8 +1,8 @@
 -- 创建课程表
 CREATE TABLE nmt_course_info (
-    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
     number VARCHAR(64) NOT NULL COMMENT '编号',
-    name VARCHAR(255) NOT NULL COMMENT '名称',
+    name VARCHAR(100) NOT NULL COMMENT '名称',
     major_type INT NOT NULL COMMENT '所属专业',
     course_type INT NOT NULL COMMENT '课程类型',
 	course_property INT NOT NULL COMMENT '课程属性',
@@ -10,7 +10,7 @@ CREATE TABLE nmt_course_info (
     course_score DECIMAL(5,2) NOT NULL COMMENT '总学分',
     grade INT NOT NULL COMMENT '授课年级',
     term INT NOT NULL COMMENT '授课学期',
-    teacher_name VARCHAR(200) COMMENT '授课教师',
+    teacher_name VARCHAR(100) COMMENT '授课教师',
     creator VARCHAR(64) DEFAULT '' COMMENT '创建者',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updater VARCHAR(64) DEFAULT '' COMMENT '更新者',
@@ -20,11 +20,11 @@ CREATE TABLE nmt_course_info (
 
 -- 创建课程目标表
 CREATE TABLE nmt_course_objective (
-  id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
-  name VARCHAR(255) NOT NULL COMMENT '名称',
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+  name VARCHAR(100) NOT NULL COMMENT '名称',
   content TEXT COMMENT '内容',
   expect_value DECIMAL(5,2) COMMENT '期望值',
-  course_id INT NOT NULL COMMENT '课程ID',
+  course_id BIGINT NOT NULL COMMENT '课程ID',
   creator VARCHAR(64) DEFAULT '' COMMENT '创建者',
   create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updater VARCHAR(64) DEFAULT '' COMMENT '更新者',
@@ -33,4 +33,33 @@ CREATE TABLE nmt_course_objective (
 ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COMMENT='课程目标';
+ 
+-- 创建课程考核方式表 
+CREATE TABLE nmt_evaluate_mode (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+  name VARCHAR(100) NOT NULL COMMENT '评价方式',
+  weight DECIMAL(5,2) NOT NULL COMMENT '权重',
+  course_id BIGINT NOT NULL COMMENT '课程ID',
+  creator VARCHAR(64) DEFAULT '' COMMENT '创建者',
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updater VARCHAR(64) DEFAULT '' COMMENT '更新者',
+  update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted BIT(1) DEFAULT b'0' COMMENT '是否删除'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='考核评价方式';
+
+
+-- 创建课程目标考核方式中间表 
+CREATE TABLE `nmt_objective_mode` (
+  `id` BIGINT PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `objective_id` BIGINT NOT NULL COMMENT '课程目标ID',
+  `mode_id` BIGINT NOT NULL COMMENT '考核方式ID',
+  `score` DECIMAL(5,2) NOT NULL COMMENT '分值/权重',
+  creator VARCHAR(64) DEFAULT '' COMMENT '创建者',
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updater VARCHAR(64) DEFAULT '' COMMENT '更新者',
+  update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted BIT(1) DEFAULT b'0' COMMENT '是否删除'
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COMMENT='课程目标考核评价表';
 

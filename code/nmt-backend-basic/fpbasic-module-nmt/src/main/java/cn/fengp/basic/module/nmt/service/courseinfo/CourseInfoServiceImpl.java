@@ -33,7 +33,7 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     private CourseInfoMapper courseInfoMapper;
 
     @Override
-    public Integer createCourseInfo(CourseInfoSaveReqVO createReqVO) {
+    public Long createCourseInfo(CourseInfoSaveReqVO createReqVO) {
         // 插入
         CourseInfoDO courseInfo = BeanUtils.toBean(createReqVO, CourseInfoDO.class);
         courseInfoMapper.insert(courseInfo);
@@ -52,7 +52,7 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     }
 
     @Override
-    public void deleteCourseInfo(Integer id) {
+    public void deleteCourseInfo(Long id) {
         // 校验存在
         validateCourseInfoExists(id);
         // 删除
@@ -60,20 +60,20 @@ public class CourseInfoServiceImpl implements CourseInfoService {
     }
 
     @Override
-        public void deleteCourseInfoListByIds(List<Integer> ids) {
+        public void deleteCourseInfoListByIds(List<Long> ids) {
         // 删除
         courseInfoMapper.deleteByIds(ids);
         }
 
 
-    private void validateCourseInfoExists(Integer id) {
+    private void validateCourseInfoExists(Long id) {
         if (courseInfoMapper.selectById(id) == null) {
             throw exception(COURSE_INFO_NOT_EXISTS);
         }
     }
 
     @Override
-    public CourseInfoDO getCourseInfo(Integer id) {
+    public CourseInfoDO getCourseInfo(Long id) {
         return courseInfoMapper.selectById(id);
     }
 

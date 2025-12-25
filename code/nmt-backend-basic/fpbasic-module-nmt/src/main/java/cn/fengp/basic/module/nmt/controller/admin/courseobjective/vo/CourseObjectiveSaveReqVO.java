@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 public class CourseObjectiveSaveReqVO {
 
     @Schema(description = "主键ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Integer id;
+    private Long id;
 
     @Schema(description = "名称", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "名称不能为空")
@@ -25,6 +25,6 @@ public class CourseObjectiveSaveReqVO {
 
     @Schema(description = "课程ID", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotNull(message = "课程ID不能为空")
-    private Integer courseId;
+    private Long courseId;
 
 }

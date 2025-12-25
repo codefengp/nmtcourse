@@ -41,7 +41,7 @@ public class CourseObjectiveController {
     @PostMapping("/create")
     @Operation(summary = "创建课程目标")
     @PreAuthorize("@ss.hasPermission('nmt:course-objective:create')")
-    public CommonResult<Integer> createCourseObjective(@Valid @RequestBody CourseObjectiveSaveReqVO createReqVO) {
+    public CommonResult<Long> createCourseObjective(@Valid @RequestBody CourseObjectiveSaveReqVO createReqVO) {
         return success(courseObjectiveService.createCourseObjective(createReqVO));
     }
 
@@ -57,7 +57,7 @@ public class CourseObjectiveController {
     @Operation(summary = "删除课程目标")
     @Parameter(name = "id", description = "编号", required = true)
     @PreAuthorize("@ss.hasPermission('nmt:course-objective:delete')")
-    public CommonResult<Boolean> deleteCourseObjective(@RequestParam("id") Integer id) {
+    public CommonResult<Boolean> deleteCourseObjective(@RequestParam("id") Long id) {
         courseObjectiveService.deleteCourseObjective(id);
         return success(true);
     }
@@ -66,7 +66,7 @@ public class CourseObjectiveController {
     @Parameter(name = "ids", description = "编号", required = true)
     @Operation(summary = "批量删除课程目标")
                 @PreAuthorize("@ss.hasPermission('nmt:course-objective:delete')")
-    public CommonResult<Boolean> deleteCourseObjectiveList(@RequestParam("ids") List<Integer> ids) {
+    public CommonResult<Boolean> deleteCourseObjectiveList(@RequestParam("ids") List<Long> ids) {
         courseObjectiveService.deleteCourseObjectiveListByIds(ids);
         return success(true);
     }
@@ -75,7 +75,7 @@ public class CourseObjectiveController {
     @Operation(summary = "获得课程目标")
     @Parameter(name = "id", description = "编号", required = true, example = "1024")
     @PreAuthorize("@ss.hasPermission('nmt:course-objective:query')")
-    public CommonResult<CourseObjectiveRespVO> getCourseObjective(@RequestParam("id") Integer id) {
+    public CommonResult<CourseObjectiveRespVO> getCourseObjective(@RequestParam("id") Long id) {
         CourseObjectiveDO courseObjective = courseObjectiveService.getCourseObjective(id);
         return success(BeanUtils.toBean(courseObjective, CourseObjectiveRespVO.class));
     }

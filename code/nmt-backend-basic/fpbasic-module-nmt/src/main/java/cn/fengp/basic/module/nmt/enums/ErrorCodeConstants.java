@@ -7,4 +7,6 @@ import cn.fengp.basic.framework.common.exception.ErrorCode;
 public interface ErrorCodeConstants {
     ErrorCode COURSE_INFO_NOT_EXISTS = new ErrorCode(1_010_000_001, "课程基本信息不存在");
     ErrorCode COURSE_OBJECTIVE_NOT_EXISTS = new ErrorCode(1_010_000_002, "课程目标不存在");
+    ErrorCode EVALUATE_MODE_NOT_EXISTS = new ErrorCode(1_010_000_003, "考核评价方式不存在");
+    ErrorCode OBJECTIVE_MODE_NOT_EXISTS = new ErrorCode(1_010_000_004, "课程目标考核评价不存在");
 }

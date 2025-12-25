@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 public class CourseInfoSaveReqVO {
 
     @Schema(description = "主键ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "24847")
-    private Integer id;
+    private Long id;
 
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotEmpty(message = "编号不能为空")

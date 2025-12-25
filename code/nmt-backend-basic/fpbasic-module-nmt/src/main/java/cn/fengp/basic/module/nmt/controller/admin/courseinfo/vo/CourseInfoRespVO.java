@@ -17,7 +17,7 @@ public class CourseInfoRespVO {
 
     @Schema(description = "主键ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "24847")
     @ExcelProperty("主键ID")
-    private Integer id;
+    private Long id;
 
     @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED)
     @ExcelProperty("编号")
