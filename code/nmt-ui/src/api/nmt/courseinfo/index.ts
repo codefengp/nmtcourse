@@ -7,6 +7,7 @@ export interface CourseInfo {
           name?: string; // 名称
           majorType?: number; // 所属专业
           courseType?: number; // 课程类型
+          courseProperty: undefined; // 课程属性
           courseHour?: number; // 总学时
           courseScore?: number; // 总学分
           grade?: number; // 授课年级

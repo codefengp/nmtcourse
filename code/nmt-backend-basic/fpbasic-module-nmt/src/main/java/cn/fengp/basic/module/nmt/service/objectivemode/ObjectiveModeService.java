@@ -1,6 +1,8 @@
 package cn.fengp.basic.module.nmt.service.objectivemode;
 
 import java.util.*;
+
+import cn.fengp.basic.module.nmt.dal.dataobject.objectivemode.ObjectiveModeExDO;
 import jakarta.validation.*;
 import cn.fengp.basic.module.nmt.controller.admin.objectivemode.vo.*;
 import cn.fengp.basic.module.nmt.dal.dataobject.objectivemode.ObjectiveModeDO;
@@ -59,4 +61,31 @@ public interface ObjectiveModeService {
      */
     PageResult<ObjectiveModeDO> getObjectiveModePage(ObjectiveModePageReqVO pageReqVO);
 
+    /**
+     * 检查并新增考核评价方式矩阵数据
+     * @param id 课程目标id/考核方式id
+     * @param isObjType 是否课程目标
+     * @return
+     */
+    void checkWithAddEvaluateMode(Long id, boolean isObjType);
+
+    /**
+     * 检查并移除考核评价方式矩阵数据
+     * @param id 课程目标id/考核方式id
+     * @param isObjType 是否课程目标
+     * @return
+     */
+    void checkWithRemoveEvaluateMode(Long id, boolean isObjType);
+
+    /**
+     * 获得课程目标考核评价列表
+     * @return
+     */
+    List<ObjectiveModeExDO> listObjectiveMode();
+
+    /**
+     * 批量更新集合
+     * @param updateReqVOs
+     */
+    void updateObjectiveModeList(List<ObjectiveModeSaveReqVO> updateReqVOs);
 }

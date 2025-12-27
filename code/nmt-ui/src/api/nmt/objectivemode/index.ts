@@ -1,12 +1,13 @@
 import request from '@/config/axios'
-import type { Dayjs } from 'dayjs';
 
 /** 课程目标考核评价信息 */
 export interface ObjectiveMode {
-          id: number; // 主键ID
+          id?: number; // 主键ID
           objectiveId?: number; // 课程目标ID
+          objectiveName?: string; // 课程目标
           modeId?: number; // 考核方式ID
-          score?: number; // 分值/权重
+          modeName?: string; // 考核方式
+          score?: number; // 分值
   }
 
 // 课程目标考核评价 API
@@ -15,6 +16,11 @@ export const ObjectiveModeApi = {
   getObjectiveModePage: async (params: any) => {
     return await request.get({ url: `/nmt/objective-mode/page`, params })
   },
+
+    // 查询课程目标考核评价
+    listObjectiveMode: async () => {
+        return await request.get({ url: `/nmt/objective-mode/list` })
+    },
 
   // 查询课程目标考核评价详情
   getObjectiveMode: async (id: number) => {
@@ -31,6 +37,11 @@ export const ObjectiveModeApi = {
     return await request.put({ url: `/nmt/objective-mode/update`, data })
   },
 
+    // 修改课程目标考核评价集合
+    updateObjectiveModeList: async (data:  ObjectiveMode[]) => {
+        return await request.put({ url: `/nmt/objective-mode/update-list`, data })
+    },
+
   // 删除课程目标考核评价
   deleteObjectiveMode: async (id: number) => {
     return await request.delete({ url: `/nmt/objective-mode/delete?id=` + id })
@@ -45,4 +56,4 @@ export const ObjectiveModeApi = {
   exportObjectiveMode: async (params) => {
     return await request.download({ url: `/nmt/objective-mode/export-excel`, params })
   },
-}
+}

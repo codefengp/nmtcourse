@@ -6,6 +6,7 @@ import cn.fengp.basic.framework.common.pojo.PageResult;
 import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.fengp.basic.framework.mybatis.core.mapper.BaseMapperX;
 import cn.fengp.basic.module.nmt.dal.dataobject.objectivemode.ObjectiveModeDO;
+import cn.fengp.basic.module.nmt.dal.dataobject.objectivemode.ObjectiveModeExDO;
 import org.apache.ibatis.annotations.Mapper;
 import cn.fengp.basic.module.nmt.controller.admin.objectivemode.vo.*;
 
@@ -24,5 +25,8 @@ public interface ObjectiveModeMapper extends BaseMapperX<ObjectiveModeDO> {
                 .eqIfPresent(ObjectiveModeDO::getScore, reqVO.getScore())
                 .orderByDesc(ObjectiveModeDO::getId));
     }
+
+
+    List<ObjectiveModeExDO> listObjectiveMode();
 
 }

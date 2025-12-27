@@ -9,4 +9,11 @@
         文档可见：https://www.iocoder.cn/MyBatis/x-plugins/
      -->
 
+    <select id="listObjectiveMode" resultType="cn.fengp.basic.module.nmt.dal.dataobject.objectivemode.ObjectiveModeExDO">
+        select t.*,t1.name as objective_name,t2.name as mode_name  from nmt_objective_mode t
+        left join nmt_course_objective t1 on t.objective_id = t1.id
+        left join nmt_evaluate_mode t2 on t.mode_id = t2.id where t.deleted = 0
+    </select>
+
+
 </mapper>

@@ -1,5 +1,6 @@
 package cn.fengp.basic.module.nmt.controller.admin.objectivemode;
 
+import cn.fengp.basic.module.nmt.dal.dataobject.objectivemode.ObjectiveModeExDO;
 import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -53,6 +54,14 @@ public class ObjectiveModeController {
         return success(true);
     }
 
+    @PutMapping("/update-list")
+    @Operation(summary = "更新课程目标考核评价集合")
+    @PreAuthorize("@ss.hasPermission('nmt:objective-mode:update')")
+    public CommonResult<Boolean> updateObjectiveModeList(@Valid @RequestBody List<ObjectiveModeSaveReqVO> updateReqVOs) {
+        objectiveModeService.updateObjectiveModeList(updateReqVOs);
+        return success(true);
+    }
+
     @DeleteMapping("/delete")
     @Operation(summary = "删除课程目标考核评价")
     @Parameter(name = "id", description = "编号", required = true)
@@ -86,6 +95,14 @@ public class ObjectiveModeController {
     public CommonResult<PageResult<ObjectiveModeRespVO>> getObjectiveModePage(@Valid ObjectiveModePageReqVO pageReqVO) {
         PageResult<ObjectiveModeDO> pageResult = objectiveModeService.getObjectiveModePage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, ObjectiveModeRespVO.class));
+    }
+
+    @GetMapping("/list")
+    @Operation(summary = "获得课程目标考核评价列表")
+    @PreAuthorize("@ss.hasPermission('nmt:objective-mode:query')")
+    public CommonResult<List<ObjectiveModeRespExVO>> listObjectiveMode() {
+        List<ObjectiveModeExDO> objectiveModeExDOS = objectiveModeService.listObjectiveMode();
+        return success(BeanUtils.toBean(objectiveModeExDOS, ObjectiveModeRespExVO.class));
     }
 
     @GetMapping("/export-excel")

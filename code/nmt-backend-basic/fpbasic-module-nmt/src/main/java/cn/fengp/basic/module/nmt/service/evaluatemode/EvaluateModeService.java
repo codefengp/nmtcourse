@@ -59,4 +59,11 @@ public interface EvaluateModeService {
      */
     PageResult<EvaluateModeDO> getEvaluateModePage(EvaluateModePageReqVO pageReqVO);
 
+    /**
+     * 获得所有考核评价方式列表
+     *
+     * @return 考核评价方式列表
+     */
+    List<EvaluateModeDO> getEvaluateModeList();
+
 }

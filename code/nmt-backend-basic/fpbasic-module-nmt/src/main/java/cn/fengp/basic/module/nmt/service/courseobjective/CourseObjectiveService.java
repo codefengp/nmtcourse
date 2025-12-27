@@ -60,4 +60,11 @@ public interface CourseObjectiveService {
      */
     PageResult<CourseObjectiveDO> getCourseObjectivePage(CourseObjectivePageReqVO pageReqVO);
 
+    /**
+     * 获得所有课程目标列表
+     *
+     * @return 课程目标列表
+     */
+    List<CourseObjectiveDO> getCourseObjectiveList();
+
 }

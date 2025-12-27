@@ -86,9 +86,8 @@
       </template>
         <el-button
             type="primary"
-            round
             class="button-add"
-            @click="addObject"
+            @click="addObjective"
         >
           新增课程目标
         </el-button>
@@ -110,7 +109,7 @@
             <el-input
               v-model="item.name"
               placeholder="请输入课程目标名称"
-              @blur="saveObject(item)"
+              @blur="saveObjective(item)"
             />
           </el-form-item>
         </el-col>
@@ -126,7 +125,7 @@
             <el-input
               v-model="item.content"
               placeholder="请输入课程目标内容描述"
-              @blur="saveObject(item)"
+              @blur="saveObjective(item)"
             />
           </el-form-item>
         </el-col>
@@ -145,14 +144,13 @@
               :max="1"
               :step="0.01"
               controls-position="right"
-              @change="saveObject(item)"
+              @change="saveObjective(item)"
             />
 
             <el-button
               type="danger"
-              round
               style="margin-left: 20px"
-              @click="removeObject(item.id)"
+              @click="removeObjective(item.id)"
             >
               删除
             </el-button>
@@ -168,7 +166,6 @@
     </template>
     <el-button
         type="primary"
-        round
         class="button-add"
         @click="addMode"
     >
@@ -207,7 +204,7 @@
           >
             <el-input-number
                 v-model="item.weight"
-                :min="1"
+                :min="0"
                 :max="100"
                 :step="1"
                 controls-position="right"
@@ -216,7 +213,6 @@
 
             <el-button
                 type="danger"
-                round
                 style="margin-left: 20px"
                 @click="removeMode(item.id)"
             >
@@ -228,6 +224,49 @@
     </el-form>
   </el-card>
 
+  <el-card class="course-card">
+    <template #header>
+      <span class="card-title">课程达成度评价</span>
+    </template>
+      <!-- 操作按钮 -->
+      <div style="margin-bottom: 12px; text-align: left" v-if="tableData && tableData.length > 0">
+          <el-button v-if="!editable" type="primary" @click="editable = true">编辑</el-button>
+          <el-button v-else type="primary" @click="saveObjectiveMode">保存</el-button>
+      </div>
+      <!-- 表格 -->
+      <el-table
+              v-if="tableData && tableData.length > 0"
+              :data="tableData"
+              border
+              style="width: 100%"
+              row-key="id"
+      >
+          <!-- 行头 -->
+          <el-table-column prop="objectiveName" label="课程目标" width="160" />
+          <!-- 考核方式列 -->
+          <el-table-column
+                  v-for="mode in modes"
+                  :key="mode.modeId"
+                  :label="mode.modeName"
+                  align="center"
+          >
+              <template #default="{ row }">
+                  <template v-if="!row.isTotal">
+                      <el-input-number
+                              v-if="editable"
+                              v-model="row[mode.modeId]"
+                              :min="0"
+                              :max="100"
+                      />
+                      <span v-else>{{ row[mode.modeId] ?? 0 }}</span>
+                  </template>
+
+                  <span v-else>{{ row[mode.modeId] }}</span>
+              </template>
+          </el-table-column>
+      </el-table>
+  </el-card>
+
 
 </template>
 
@@ -236,6 +275,7 @@ import {DICT_TYPE, getDictLabel} from '@/utils/dict'
 import { CourseInfoApi } from '@/api/nmt/courseinfo'
 import { CourseObjectiveApi,CourseObjective } from '@/api/nmt/courseobjective'
 import { EvaluateModeApi,EvaluateMode} from "@/api/nmt/evaluatemode";
+import { ObjectiveModeApi,ObjectiveMode} from "@/api/nmt/objectivemode";
 
 /** 课程大纲 列表 */
 defineOptions({ name: 'CourseOutline' })
@@ -274,19 +314,21 @@ const objectForm = reactive<{
 })
 
 /** 新增：直接入库，name 为空让用户填 */
-const addObject = async () => {
+const addObjective = async () => {
   await CourseObjectiveApi.createCourseObjective({
     courseId,
     name: '课程目标',
-    content: '',
+    content: '课程目标内容',
     expectValue: 0
   } as CourseObjective)
 
-  await reloadObjectList()
+  await reloadObjectiveList()
+  //课程达成度评价(矩阵)
+  await reloadObjectiveModeList()
 }
 
 /** 目标列表数据 */
-const reloadObjectList = async () => {
+const reloadObjectiveList = async () => {
   const res = await CourseObjectiveApi.getCourseObjectivePage({
       courseId,
       pageNo: 1,
@@ -297,13 +339,15 @@ const reloadObjectList = async () => {
 }
 
 /** 自动保存 */
-const saveObject = async (row: CourseObjective) => {
-  if (!row.name || !row.content || !row.expectValue) return
+const saveObjective = async (row: CourseObjective) => {
+  if (!row.name || !row.content) return
   await CourseObjectiveApi.updateCourseObjective(row)
+  //课程达成度评价(矩阵)
+  await reloadObjectiveModeList()
 }
 
 /** 删除 */
-const removeObject = async (id: number) => {
+const removeObjective = async (id: number) => {
     ElMessageBox.confirm(
         '确认删除该课程目标吗？',
         '删除确认',
@@ -317,6 +361,9 @@ const removeObject = async (id: number) => {
         await CourseObjectiveApi.deleteCourseObjective(id)
         objectForm.objectives = objectForm.objectives.filter(i => i.id !== id)
         ElMessage.success('删除课程目标成功')
+
+      //课程达成度评价(矩阵)
+      await reloadObjectiveModeList()
     })
     .catch(() => {
     })
@@ -335,10 +382,12 @@ const addMode = async () => {
   await EvaluateModeApi.createEvaluateMode({
     courseId,
     name: '考核方式',
-    weight: 1
+    weight: 0
   } as EvaluateMode)
 
   await reloadModeList()
+  //课程达成度评价(矩阵)
+  await reloadObjectiveModeList()
 }
 
 /** 列表数据 */
@@ -354,8 +403,10 @@ const reloadModeList = async () => {
 
 /** 自动保存 */
 const saveMode = async (row: EvaluateMode) => {
-  if (!row.name || !row.weight) return
+  if (!row.name) return
   await EvaluateModeApi.updateEvaluateMode(row)
+  //课程达成度评价(矩阵)
+  await reloadObjectiveModeList()
 }
 
 /** 删除 */
@@ -372,10 +423,98 @@ const removeMode = async (id: number) => {
       .then(async () => {
         await EvaluateModeApi.deleteEvaluateMode(id)
         modeForm.modes = modeForm.modes.filter(i => i.id !== id)
-        ElMessage.success('删除评级方式成功')
+        ElMessage.success('删除评价方式成功')
+        //课程达成度评价(矩阵)
+        await reloadObjectiveModeList()
       })
       .catch(() => {
       })
+}
+
+
+/** 4.课程达成度评价 **/
+interface TableRow {
+    id: number
+    objectiveId: number
+    objectiveName: string
+    isTotal?: boolean
+    [modeId: number]: number | boolean | string
+}
+
+const editable = ref(false)
+const tableData = ref<TableRow[]>([])
+const modes = ref<{ modeId: number; modeName: string }[]>([])
+
+/** 根据接口数据生成矩阵 + 合计行 */
+const renderMatrix = (list: ObjectiveMode[]) => {
+    //清空数据
+    tableData.value = []
+    const rowMap = new Map<number, TableRow>()
+    const modeMap = new Map<number, string>()
+
+    list.forEach(item => {
+        if (!item.objectiveId || !item.modeId) return
+        if (!rowMap.has(item.objectiveId)) {
+            rowMap.set(item.objectiveId, {
+                id: item.objectiveId,
+                objectiveId: item.objectiveId,
+                objectiveName: item.objectiveName || ''
+            })
+        }
+        // !是ts的非空断言,保证 rowMap.get(item.objectiveId)undefined
+        // [item.modeId] 是 动态属性访问，意思是把对象的某个属性设置为某个值，属性名是 item.modeId(若属性不存在,自动创建属性)
+        rowMap.get(item.objectiveId)![item.modeId] = item.score ?? 0
+        //设置单元格的主键 key: item.objectiveId + '_' +item.modeId
+        rowMap.get(item.objectiveId)![item.objectiveId + '_' +item.modeId] = item.id ?? 0
+        // 收集所有列，形成 modes 数组,用于 <el-table-column v-for="mode in modes"> 动态渲染列
+        if (!modeMap.has(item.modeId)) modeMap.set(item.modeId, item.modeName || '')
+    })
+
+    //普通行
+    const rows = Array.from(rowMap.values())
+    modes.value = Array.from(modeMap.entries()).map(([modeId, modeName]) => ({ modeId, modeName }))
+
+    if(rows.length > 0){
+      const totalRow: TableRow = { id: -1, objectiveId: -1, objectiveName: '合计', isTotal: true }
+      modes.value.forEach(mode => {
+        totalRow[mode.modeId] = rows.reduce((sum, r) => sum + Number(r[mode.modeId] ?? 0), 0)
+      })
+      //合并数组
+      tableData.value = [...rows, totalRow]
+    }
+}
+
+/** 刷新矩阵 */
+const reloadObjectiveModeList = async () => {
+    const list = await ObjectiveModeApi.listObjectiveMode()
+    //矩阵数据更新
+    renderMatrix(list)
+    editable.value = false
+}
+
+/** 保存并自动刷新 */
+const saveObjectiveMode = async () => {
+    const rows = tableData.value.filter(r => !r.isTotal)
+    const result: ObjectiveMode[] = []
+    rows.forEach(row => {
+        modes.value.forEach(mode => {
+            //单元格的主键 key: objectiveId + '_' +modeId
+            const key = `${row.objectiveId}_${mode.modeId}`
+            result.push({
+                id: row[key],
+                objectiveId: row.objectiveId,
+                objectiveName: row.objectiveName,
+                modeId: mode.modeId,
+                modeName: mode.modeName,
+                score: Number(row[mode.modeId] ?? 0)
+            })
+        })
+    })
+    // 保存矩阵数据
+    await ObjectiveModeApi.updateObjectiveModeList(result)
+    // 自动刷新矩阵
+    await reloadObjectiveModeList()
+    ElMessage.success('保存成功')
 }
 
 /** 初始化 **/
@@ -383,9 +522,11 @@ onMounted(async () => {
     //1.课程详情
     await getDetail(courseId)
     //2.课程目标
-    await reloadObjectList()
+    await reloadObjectiveList()
     //3.考核评价方式
     await reloadModeList()
+    //4.课程达成度评价(矩阵)
+    await reloadObjectiveModeList()
 })
 </script>
 
