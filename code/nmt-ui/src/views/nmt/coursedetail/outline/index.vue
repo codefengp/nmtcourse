@@ -82,15 +82,17 @@
 
   <el-card class="course-card">
       <template #header>
-          <span class="card-title">课程教学目标</span>
+        <div class="card-header">
+            <span class="card-title">课程教学目标</span>
+            <el-button
+              type="primary"
+              class="button-add"
+              @click="addObjective"
+            >
+              新增课程目标
+            </el-button>
+        </div>
       </template>
-        <el-button
-            type="primary"
-            class="button-add"
-            @click="addObjective"
-        >
-          新增课程目标
-        </el-button>
     <el-form ref="formRef" :model="objectForm">
       <el-row
         v-for="(item, index) in objectForm.objectives"
@@ -115,7 +117,7 @@
         </el-col>
 
         <!-- 目标内容 -->
-        <el-col :span="16">
+        <el-col :span="15">
           <el-form-item
             label="目标内容"
             label-width="100px"
@@ -131,7 +133,7 @@
         </el-col>
 
         <!-- 期望值 + 删除 -->
-        <el-col :span="4">
+        <el-col :span="5">
           <el-form-item
             label="目标值"
             label-width="100px"
@@ -162,15 +164,17 @@
 
   <el-card class="course-card">
     <template #header>
-      <span class="card-title">课程考核方式</span>
+      <div class="card-header">
+        <span class="card-title">课程考核方式</span>
+        <el-button
+          type="primary"
+          class="button-add"
+          @click="addMode"
+        >
+          新增考核方式
+        </el-button>
+      </div>
     </template>
-    <el-button
-        type="primary"
-        class="button-add"
-        @click="addMode"
-    >
-      新增考核方式
-    </el-button>
     <el-form ref="formRef" :model="modeForm">
       <el-row
           v-for="(item, index) in modeForm.modes"
@@ -179,7 +183,7 @@
           style="margin-bottom: 12px"
       >
         <!-- 目标名 -->
-        <el-col :span="20">
+        <el-col :span="19">
           <el-form-item
               label="考核名称"
               label-width="100px"
@@ -195,7 +199,7 @@
         </el-col>
 
         <!-- 期望值 + 删除 -->
-        <el-col :span="4">
+        <el-col :span="5">
           <el-form-item
               label="权重(%)"
               label-width="100px"
@@ -226,45 +230,57 @@
 
   <el-card class="course-card">
     <template #header>
-      <span class="card-title">课程达成度评价</span>
-    </template>
-      <!-- 操作按钮 -->
-      <div style="margin-bottom: 12px; text-align: left" v-if="tableData && tableData.length > 0">
+      <div class="card-header">
+        <span class="card-title">课程达成度评价</span>
+        <!-- 操作按钮 -->
+        <div class="button-add" v-if="tableData && tableData.length > 0">
           <el-button v-if="!editable" type="primary" @click="editable = true">编辑</el-button>
           <el-button v-else type="primary" @click="saveObjectiveMode">保存</el-button>
+        </div>
       </div>
+    </template>
       <!-- 表格 -->
-      <el-table
-              v-if="tableData && tableData.length > 0"
-              :data="tableData"
-              border
-              style="width: 100%"
-              row-key="id"
-      >
-          <!-- 行头 -->
-          <el-table-column prop="objectiveName" label="课程目标" width="160" />
-          <!-- 考核方式列 -->
-          <el-table-column
-                  v-for="mode in modes"
-                  :key="mode.modeId"
-                  :label="mode.modeName"
-                  align="center"
-          >
-              <template #default="{ row }">
-                  <template v-if="!row.isTotal">
-                      <el-input-number
-                              v-if="editable"
-                              v-model="row[mode.modeId]"
-                              :min="0"
-                              :max="100"
-                      />
-                      <span v-else>{{ row[mode.modeId] ?? 0 }}</span>
-                  </template>
+    <el-table
+      v-if="tableData && tableData.length > 0"
+      :data="tableData"
+      border
+      style="width: 100%"
+      row-key="id"
+      :row-class-name="rowClassName"
+    >
+      <!-- 课程目标 -->
+      <el-table-column
+        prop="objectiveName"
+        label="课程目标"
+        width="160"
+        align="center"
+      />
 
-                  <span v-else>{{ row[mode.modeId] }}</span>
-              </template>
-          </el-table-column>
-      </el-table>
+      <!-- 考核方式及成绩总分（父表头） -->
+      <el-table-column label="考核方式及成绩总分" align="center">
+        <!-- 子表头 -->
+        <el-table-column
+          v-for="mode in modes"
+          :key="mode.modeId"
+          :label="mode.modeName"
+          align="center"
+        >
+          <template #default="{ row }">
+            <template v-if="!row.isTotal">
+              <el-input-number
+                v-if="editable"
+                v-model="row[mode.modeId]"
+                :min="0"
+                :max="100"
+              />
+              <span v-else>{{ row[mode.modeId] ?? 0 }}</span>
+            </template>
+
+            <span v-else>{{ row[mode.modeId] }}</span>
+          </template>
+        </el-table-column>
+      </el-table-column>
+    </el-table>
   </el-card>
 
 
@@ -517,6 +533,11 @@ const saveObjectiveMode = async () => {
     ElMessage.success('保存成功')
 }
 
+/** 合计行字体加粗 */
+const rowClassName = ({ row }) => {
+  return row.isTotal ? 'total-row' : ''
+}
+
 /** 初始化 **/
 onMounted(async () => {
     //1.课程详情
@@ -541,9 +562,15 @@ onMounted(async () => {
     font-size: 16px;
 }
 
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .button-add {
-    margin-top: 10px;
-    margin-bottom: 16px;
+    display: flex;
+    justify-content: flex-end; /* 右对齐 */
 }
 
 .info-item {
@@ -557,6 +584,11 @@ onMounted(async () => {
 
 .value {
     color: #303133;
+}
+
+:deep(.total-row td) {
+  font-weight: 600;
+  background-color: rgba(250, 250, 250, 0.99); /* 可选：浅灰 */
 }
 
 </style>
