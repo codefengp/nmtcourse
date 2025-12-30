@@ -358,5 +358,3 @@ ip:     http://xxx.xx.xx.xx/ 端口默认80，可以在nginx.conf中修改。
 ### 2.3 上传jar包
 
 ![image-20251230154921709](README.assets/image-20251230154921709.png)
-
-![image-20251230161936764](README.assets/image-20251230161936764.png)
