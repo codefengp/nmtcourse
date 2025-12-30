@@ -220,3 +220,143 @@ CO_j = Σ (Wi × Rj,i × Ai)
 > ⚠️ **此时不需要再除以 Σ(Wi × Rj,i)**
 >  因为 Rj,i 已经行归一
 
+
+
+
+
+# Docker 部署
+
+## 1 环境准备
+
+### 1.1 安装Docker
+
+### 1.2 安装MySQL 容器
+
+### 1.3 安装Redis容器
+
+### 1.4 安装Nginx（非容器）
+
+#### 1.4.1 安装依赖包
+
+```cmd
+//一键安装上面四个依赖
+yum -y install gcc zlib zlib-devel pcre-devel openssl openssl-devel
+```
+
+#### 1.4.2 下载并解压安装包
+
+```cmd
+//创建一个文件夹
+cd /usr/local
+mkdir nginx
+cd nginx
+//下载tar包
+wget http://nginx.org/download/nginx-1.13.7.tar.gz
+tar -zxvf nginx-1.13.7.tar.gz
+```
+
+#### 1.4.3 安装nginx
+
+```cmd
+//进入nginx目录
+cd /usr/local/nginx
+//进入目录
+cd nginx-1.13.7
+//执行命令 考虑到后续安装ssl证书 添加两个模块(选功能、查环境)
+./configure --with-http_stub_status_module --with-http_ssl_module
+//执行make命令(编译程序)
+make
+//执行make install命令(安装到系统)
+make install
+```
+
+
+
+#### 1.4.4 启动nginx服务
+
+```cmd
+/usr/local/nginx/sbin/nginx -c /usr/local/nginx/conf/nginx.conf
+//查看是否启动成功
+ps -ef | grep nginx
+```
+
+#### 1.4.5 配置nginx.conf
+
+```cmd
+# 打开配置文件
+vi /usr/local/nginx/conf/nginx.conf
+```
+
+#### 1.4.6 重启nginx
+
+```cmd
+/usr/local/nginx/sbin/nginx -s reload
+```
+
+#### 1.4.7 开发端口
+
+若想使用外部主机访问nginx，需要关闭服务器防火墙或开放nginx服务端口，端口为上一步nginx.conf的配置端口
+
+centOS7关闭防火墙命令： systemctl stop firewalld.service
+
+关闭防火墙会导致服务器有一定风险，所以建议是单独开放服务端口 ：
+
+开放80端口：
+
+firewall-cmd --zone=public --add-port=80/tcp --permanent
+
+查询端口号80 是否开启：
+
+firewall-cmd --query-port=80/tcp
+
+重启防火墙：
+
+firewall-cmd --reload
+
+随后访问该ip:端口 即可看到nginx界面。
+
+#### 1.4.8 访问服务器ip查看
+
+ip:     http://xxx.xx.xx.xx/ 端口默认80，可以在nginx.conf中修改。
+
+如果看到welcom to nginx！代表成功了
+
+#### 1.4.9 安装完成一般常用命令
+
+进入安装目录中，
+
+命令： cd /usr/local/nginx/sbin
+
+**文件显示绿色，代表可以执行文件**
+
+启动，关闭，重启，命令：
+
+./nginx 启动
+
+./nginx -s stop 关闭
+
+./nginx -s reload 重启
+
+
+
+## 2 部署后端
+
+### 2.1 修改配置
+
+后端 dev 开发环境对应的是 application-dev.yaml配置文件，主要是修改 MySQL 和 Redis 为你的地址
+
+![image-20251230154527522](README.assets/image-20251230154527522.png)
+
+![image-20251230154414903](README.assets/image-20251230154414903.png)
+
+
+
+### 2.2 打成jar包
+
+在项目的根目录下，执行 mvn clean package -DskipTests 命令，编译后端项目，构建出它的 Jar 包。
+
+### 2.3 上传jar包
+
+![image-20251230154921709](README.assets/image-20251230154921709.png)
+
+![image-20251230161936764](README.assets/image-20251230161936764.png)
