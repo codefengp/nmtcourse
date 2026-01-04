@@ -63,3 +63,19 @@ CREATE TABLE `nmt_objective_mode` (
   DEFAULT CHARSET=utf8mb4
   COMMENT='课程目标考核评价表';
 
+-- 创建课程考核计划表
+CREATE TABLE `nmt_evaluate_plan` (
+  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+  `objective_mode_id` BIGINT NOT NULL COMMENT '目标评价ID',
+  `objective_id` BIGINT NOT NULL COMMENT '课程目标ID',
+  `mode_id` BIGINT NOT NULL COMMENT '考核方式ID',
+  `score` DECIMAL(5,2) NOT NULL COMMENT '分数/权重',
+  `content` VARCHAR(100) DEFAULT NULL COMMENT '考核内容',
+  creator VARCHAR(64) DEFAULT '' COMMENT '创建者',
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updater VARCHAR(64) DEFAULT '' COMMENT '更新者',
+  update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  deleted BIT(1) DEFAULT b'0' COMMENT '是否删除'
+  ) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COMMENT='课程考核计划表';
