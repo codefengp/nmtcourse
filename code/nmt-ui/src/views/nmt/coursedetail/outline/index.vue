@@ -117,7 +117,7 @@
         </el-col>
 
         <!-- 目标内容 -->
-        <el-col :span="15">
+        <el-col :span="14">
           <el-form-item
             label="目标内容"
             label-width="100px"
@@ -133,7 +133,7 @@
         </el-col>
 
         <!-- 期望值 + 删除 -->
-        <el-col :span="5">
+        <el-col :span="6">
           <el-form-item
             label="目标值"
             label-width="100px"
@@ -183,7 +183,7 @@
           style="margin-bottom: 12px"
       >
         <!-- 目标名 -->
-        <el-col :span="19">
+        <el-col :span="18">
           <el-form-item
               label="考核名称"
               label-width="100px"
@@ -199,7 +199,7 @@
         </el-col>
 
         <!-- 期望值 + 删除 -->
-        <el-col :span="5">
+        <el-col :span="6">
           <el-form-item
               label="权重(%)"
               label-width="100px"
