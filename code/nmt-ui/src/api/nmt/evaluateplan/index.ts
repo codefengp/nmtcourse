@@ -1,5 +1,4 @@
 import request from '@/config/axios'
-import type { Dayjs } from 'dayjs';
 
 /** 课程考核计划信息 */
 export interface EvaluatePlan {
@@ -47,4 +46,4 @@ export const EvaluatePlanApi = {
   exportEvaluatePlan: async (params) => {
     return await request.download({ url: `/nmt/evaluate-plan/export-excel`, params })
   },
-}
+}

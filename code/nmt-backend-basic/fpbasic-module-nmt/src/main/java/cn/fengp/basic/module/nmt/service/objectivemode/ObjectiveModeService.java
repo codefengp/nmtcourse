@@ -67,7 +67,7 @@ public interface ObjectiveModeService {
      * @param isObjType 是否课程目标
      * @return
      */
-    void checkWithAddEvaluateMode(Long id, boolean isObjType);
+    void checkWithAddEvaluateMode(Long courseId,Long id, boolean isObjType);
 
     /**
      * 检查并移除考核评价方式矩阵数据
@@ -81,7 +81,7 @@ public interface ObjectiveModeService {
      * 获得课程目标考核评价列表
      * @return
      */
-    List<ObjectiveModeExDO> listObjectiveMode();
+    List<ObjectiveModeExDO> listObjectiveMode(Long courseId);
 
     /**
      * 批量更新集合

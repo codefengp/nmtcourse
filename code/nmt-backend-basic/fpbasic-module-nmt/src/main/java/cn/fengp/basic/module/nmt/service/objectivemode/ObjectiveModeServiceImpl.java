@@ -12,6 +12,7 @@ import cn.fengp.basic.module.nmt.dal.mysql.courseobjective.CourseObjectiveMapper
 import cn.fengp.basic.module.nmt.dal.mysql.evaluatemode.EvaluateModeMapper;
 import cn.fengp.basic.module.nmt.dal.mysql.objectivemode.ObjectiveModeMapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -103,19 +104,21 @@ public class ObjectiveModeServiceImpl implements ObjectiveModeService {
      *      2.2 新增中间表数据
      */
     @Override
-    public void checkWithAddEvaluateMode(Long id, boolean isObjType) {
-        // 查询所有目标/考核方式
+    public void checkWithAddEvaluateMode(Long courseId,Long id, boolean isObjType) {
+        // 查询课程所有目标/考核方式
         Long[] targetIds = isObjType ?
-                evaluateModeMapper.selectList().stream().map(EvaluateModeDO::getId).toArray(Long[]::new)
-                : courseObjectiveMapper.selectList().stream().map(CourseObjectiveDO::getId).toArray(Long[]::new);
+                evaluateModeMapper.selectList(new LambdaQueryWrapper<>(EvaluateModeDO.class).eq(EvaluateModeDO::getCourseId,courseId))
+                        .stream().map(EvaluateModeDO::getId).toArray(Long[]::new)
+                : courseObjectiveMapper.selectList(new LambdaQueryWrapper<>(CourseObjectiveDO.class).eq(CourseObjectiveDO::getCourseId,courseId))
+                .stream().map(CourseObjectiveDO::getId).toArray(Long[]::new);
         // 新增矩阵数据
         if(targetIds.length > 0){
             List<ObjectiveModeDO> list = new ArrayList<>();
             for (Long targetId : targetIds) {
                 if(isObjType){
-                    list.add(new ObjectiveModeDO().setObjectiveId(id).setModeId(targetId).setScore(BigDecimal.valueOf(0)));
+                    list.add(new ObjectiveModeDO().setCourseId(courseId).setObjectiveId(id).setModeId(targetId).setScore(BigDecimal.valueOf(0)));
                 }else{
-                    list.add(new ObjectiveModeDO().setObjectiveId(targetId).setModeId(id).setScore(BigDecimal.valueOf(0)));
+                    list.add(new ObjectiveModeDO().setCourseId(courseId).setObjectiveId(targetId).setModeId(id).setScore(BigDecimal.valueOf(0)));
                 }
             }
             if(!CollectionUtils.isEmpty(list)){
@@ -145,8 +148,8 @@ public class ObjectiveModeServiceImpl implements ObjectiveModeService {
      * @return
      */
     @Override
-    public List<ObjectiveModeExDO> listObjectiveMode() {
-        return objectiveModeMapper.listObjectiveMode();
+    public List<ObjectiveModeExDO> listObjectiveMode(Long courseId) {
+        return objectiveModeMapper.listObjectiveMode(courseId);
     }
 
     /**

@@ -188,32 +188,50 @@
         :formatter="dateFormatter"
         width="180px"
       />
-      <el-table-column label="操作" align="center" min-width="180px">
+      <el-table-column label="操作" align="center" min-width="150px">
         <template #default="scope">
+         <div class="flex items-center justify-center">
           <el-button
-            link
-            type="primary"
-            @click="courseOutline(scope.row.id)"
-            v-hasPermi="['nmt:course-info:update']"
-          >
-            课程大纲
+              type="primary"
+              link
+              @click="openForm('update', scope.row.id)"
+              v-hasPermi="['system:user:update']">
+            <Icon icon="ep:edit" />修改
           </el-button>
-          <el-button
-            link
-            type="primary"
-            @click="openForm('update', scope.row.id)"
-            v-hasPermi="['nmt:course-info:update']"
+
+          <el-dropdown
+            @command="(command) => handleCommand(command, scope.row)"
+            v-hasPermi="[
+                    'nmt:course-info:update',
+                    'nmt:course-info:update',
+                    'nmt:course-info:delete'
+                  ]"
           >
-            编辑
-          </el-button>
-          <el-button
-            link
-            type="danger"
-            @click="handleDelete(scope.row.id)"
-            v-hasPermi="['nmt:course-info:delete']"
-          >
-            删除
-          </el-button>
+          <el-button type="primary" link><Icon icon="ep:d-arrow-right" /> 更多</el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item
+                  command="courseOutline"
+                  v-if="checkPermi(['nmt:course-info:update'])"
+                >
+                  <Icon icon="ep:grid" />课程大纲
+                </el-dropdown-item>
+                  <el-dropdown-item
+                          command="evaluatePlan"
+                          v-if="checkPermi(['nmt:course-info:update'])"
+                  >
+                      <Icon icon="ep:document" />考核计划
+                  </el-dropdown-item>
+                <el-dropdown-item
+                  command="handleDelete"
+                  v-if="checkPermi(['nmt:course-info:delete'])"
+                >
+                  <Icon icon="ep:delete" />删除
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+         </div>
         </template>
       </el-table-column>
     </el-table>
@@ -237,6 +255,7 @@ import { dateFormatter } from '@/utils/formatTime'
 import download from '@/utils/download'
 import { CourseInfoApi, CourseInfo } from '@/api/nmt/courseinfo'
 import CourseInfoForm from './CourseInfoForm.vue'
+import {checkPermi} from "@/utils/permission";
 
 /** 课程信息 列表 */
 defineOptions({ name: 'CourseInfo' })
@@ -339,12 +358,37 @@ const handleExport = async () => {
   }
 }
 
+/** 操作分发 */
+const handleCommand = (command: string, row: CourseInfo) => {
+    switch (command) {
+        case 'handleDelete':
+            handleDelete(row.id)
+            break
+        case 'courseOutline':
+            courseOutline(row.id)
+            break
+        case 'evaluatePlan':
+            evaluatePlan(row.id)
+            break
+        default:
+            break
+    }
+}
+
 /**
  * 课程大纲
  */
 const courseOutline = (id: number) => {
   // 跳转页面并设置请求参数，使用 `query` 属性
   push('/course/course-detail/outline?id=' + id)
+}
+
+/**
+ * 考核计划
+ */
+const evaluatePlan = (id: number) => {
+    // 跳转页面并设置请求参数，使用 `query` 属性
+    push('/course/course-detail/evaluate-plan?id=' + id)
 }
 
 /** 初始化 **/

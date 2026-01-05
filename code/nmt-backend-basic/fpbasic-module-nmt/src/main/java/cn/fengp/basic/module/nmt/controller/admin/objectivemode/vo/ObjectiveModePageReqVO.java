@@ -14,6 +14,9 @@ import static cn.fengp.basic.framework.common.util.date.DateUtils.FORMAT_YEAR_MO
 @Data
 public class ObjectiveModePageReqVO extends PageParam {
 
+    @Schema(description = "课程ID", example = "3596")
+    private Long courseId;
+
     @Schema(description = "课程目标ID", example = "3596")
     private Long objectiveId;
 

@@ -29,6 +29,10 @@ public class ObjectiveModeDO extends BaseDO {
     @TableId
     private Long id;
     /**
+     * 课程ID
+     */
+    private Long courseId;
+    /**
      * 课程目标ID
      */
     private Long objectiveId;
@@ -42,4 +46,4 @@ public class ObjectiveModeDO extends BaseDO {
     private BigDecimal score;
 
 
-}
+}

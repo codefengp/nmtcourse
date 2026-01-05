@@ -39,7 +39,7 @@ public class EvaluateModeServiceImpl implements EvaluateModeService {
         EvaluateModeDO evaluateMode = BeanUtils.toBean(createReqVO, EvaluateModeDO.class);
         evaluateModeMapper.insert(evaluateMode);
         //新增矩阵数据
-        objectiveModeService.checkWithAddEvaluateMode(evaluateMode.getId(),false);
+        objectiveModeService.checkWithAddEvaluateMode(evaluateMode.getCourseId(),evaluateMode.getId(),false);
         // 返回
         return evaluateMode.getId();
     }

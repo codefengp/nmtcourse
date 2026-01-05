@@ -9,6 +9,7 @@ import cn.fengp.basic.module.nmt.dal.dataobject.objectivemode.ObjectiveModeDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.objectivemode.ObjectiveModeExDO;
 import org.apache.ibatis.annotations.Mapper;
 import cn.fengp.basic.module.nmt.controller.admin.objectivemode.vo.*;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 课程目标考核评价 Mapper
@@ -27,6 +28,6 @@ public interface ObjectiveModeMapper extends BaseMapperX<ObjectiveModeDO> {
     }
 
 
-    List<ObjectiveModeExDO> listObjectiveMode();
+    List<ObjectiveModeExDO> listObjectiveMode(@Param("courseId") Long courseId);
 
 }

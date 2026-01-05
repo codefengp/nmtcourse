@@ -15,6 +15,10 @@ public class ObjectiveModeRespVO {
     @ExcelProperty("主键ID")
     private Long id;
 
+    @Schema(description = "课程ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "3596")
+    @ExcelProperty("课程ID")
+    private Long courseId;
+
     @Schema(description = "课程目标ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "3596")
     @ExcelProperty("课程目标ID")
     private Long objectiveId;
@@ -27,4 +31,4 @@ public class ObjectiveModeRespVO {
     @ExcelProperty("分值/权重")
     private BigDecimal score;
 
-}
+}

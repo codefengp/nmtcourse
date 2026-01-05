@@ -502,7 +502,7 @@ const renderMatrix = (list: ObjectiveMode[]) => {
 
 /** 刷新矩阵 */
 const reloadObjectiveModeList = async () => {
-    const list = await ObjectiveModeApi.listObjectiveMode()
+    const list = await ObjectiveModeApi.listObjectiveMode(courseId)
     //矩阵数据更新
     renderMatrix(list)
     editable.value = false
@@ -518,6 +518,7 @@ const saveObjectiveMode = async () => {
             const key = `${row.objectiveId}_${mode.modeId}`
             result.push({
                 id: row[key],
+                courseId: courseId,
                 objectiveId: row.objectiveId,
                 objectiveName: row.objectiveName,
                 modeId: mode.modeId,

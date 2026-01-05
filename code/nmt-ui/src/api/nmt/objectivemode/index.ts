@@ -3,6 +3,7 @@ import request from '@/config/axios'
 /** 课程目标考核评价信息 */
 export interface ObjectiveMode {
           id?: number; // 主键ID
+          courseId?: number;//课程ID
           objectiveId?: number; // 课程目标ID
           objectiveName?: string; // 课程目标
           modeId?: number; // 考核方式ID
@@ -18,8 +19,8 @@ export const ObjectiveModeApi = {
   },
 
     // 查询课程目标考核评价
-    listObjectiveMode: async () => {
-        return await request.get({ url: `/nmt/objective-mode/list` })
+    listObjectiveMode: async (courseId: number) => {
+        return await request.get({ url: `/nmt/objective-mode/list?courseId=` + courseId })
     },
 
   // 查询课程目标考核评价详情

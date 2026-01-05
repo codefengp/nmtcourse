@@ -13,6 +13,10 @@ public class ObjectiveModeSaveReqVO {
     @Schema(description = "主键ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "476")
     private Long id;
 
+    @Schema(description = "课程ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "3596")
+    @NotNull(message = "课程ID不能为空")
+    private Long courseId;
+
     @Schema(description = "课程目标ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "3596")
     @NotNull(message = "课程目标ID不能为空")
     private Long objectiveId;

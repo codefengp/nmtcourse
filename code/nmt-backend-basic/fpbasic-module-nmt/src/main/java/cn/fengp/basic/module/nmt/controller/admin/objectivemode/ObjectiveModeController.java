@@ -100,8 +100,8 @@ public class ObjectiveModeController {
     @GetMapping("/list")
     @Operation(summary = "获得课程目标考核评价列表")
     @PreAuthorize("@ss.hasPermission('nmt:objective-mode:query')")
-    public CommonResult<List<ObjectiveModeRespExVO>> listObjectiveMode() {
-        List<ObjectiveModeExDO> objectiveModeExDOS = objectiveModeService.listObjectiveMode();
+    public CommonResult<List<ObjectiveModeRespExVO>> listObjectiveMode(@RequestParam("courseId") Long courseId) {
+        List<ObjectiveModeExDO> objectiveModeExDOS = objectiveModeService.listObjectiveMode(courseId);
         return success(BeanUtils.toBean(objectiveModeExDOS, ObjectiveModeRespExVO.class));
     }
 

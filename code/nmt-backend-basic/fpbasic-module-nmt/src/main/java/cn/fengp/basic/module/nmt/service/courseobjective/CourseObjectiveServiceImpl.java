@@ -39,7 +39,7 @@ public class CourseObjectiveServiceImpl implements CourseObjectiveService {
         CourseObjectiveDO courseObjective = BeanUtils.toBean(createReqVO, CourseObjectiveDO.class);
         courseObjectiveMapper.insert(courseObjective);
         //新增矩阵数据
-        objectiveModeService.checkWithAddEvaluateMode(courseObjective.getId(),true);
+        objectiveModeService.checkWithAddEvaluateMode(courseObjective.getCourseId(),courseObjective.getId(),true);
         // 返回
         return courseObjective.getId();
     }
