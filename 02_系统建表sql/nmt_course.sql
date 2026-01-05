@@ -51,6 +51,7 @@ CREATE TABLE nmt_evaluate_mode (
 -- 创建课程目标考核方式中间表 
 CREATE TABLE `nmt_objective_mode` (
   `id` BIGINT PRIMARY KEY NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+   course_id BIGINT NOT NULL COMMENT '课程ID',
   `objective_id` BIGINT NOT NULL COMMENT '课程目标ID',
   `mode_id` BIGINT NOT NULL COMMENT '考核方式ID',
   `score` DECIMAL(5,2) NOT NULL COMMENT '分值/权重',
