@@ -1,6 +1,8 @@
 package cn.fengp.basic.module.nmt.service.evaluateplan;
 
 import java.util.*;
+
+import cn.fengp.basic.module.nmt.dal.dataobject.evaluateplan.EvaluatePlanExDO;
 import jakarta.validation.*;
 import cn.fengp.basic.module.nmt.controller.admin.evaluateplan.vo.*;
 import cn.fengp.basic.module.nmt.dal.dataobject.evaluateplan.EvaluatePlanDO;
@@ -59,4 +61,16 @@ public interface EvaluatePlanService {
      */
     PageResult<EvaluatePlanDO> getEvaluatePlanPage(EvaluatePlanPageReqVO pageReqVO);
 
+    /**
+     * 获取课程考核方式列表
+     * @param courseId
+     * @return
+     */
+    List<EvaluatePlanExDO> listEvaluatePlan(Long courseId);
+
+    /**
+     * 保存课程考核计划集合
+     * @param reqVOs
+     */
+    void saveEvaluatePlanList(List<EvaluatePlanSaveReqVO> reqVOs);
 }

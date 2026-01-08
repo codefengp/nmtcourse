@@ -6,8 +6,10 @@ import cn.fengp.basic.framework.common.pojo.PageResult;
 import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.fengp.basic.framework.mybatis.core.mapper.BaseMapperX;
 import cn.fengp.basic.module.nmt.dal.dataobject.evaluateplan.EvaluatePlanDO;
+import cn.fengp.basic.module.nmt.dal.dataobject.evaluateplan.EvaluatePlanExDO;
 import org.apache.ibatis.annotations.Mapper;
 import cn.fengp.basic.module.nmt.controller.admin.evaluateplan.vo.*;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 课程考核计划 Mapper
@@ -27,4 +29,5 @@ public interface EvaluatePlanMapper extends BaseMapperX<EvaluatePlanDO> {
                 .orderByDesc(EvaluatePlanDO::getId));
     }
 
+    List<EvaluatePlanExDO> listEvaluatePlan(@Param("courseId") Long courseId);
 }

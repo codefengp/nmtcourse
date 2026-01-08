@@ -1,5 +1,8 @@
 package cn.fengp.basic.module.nmt.controller.admin.evaluateplan;
 
+import cn.fengp.basic.module.nmt.controller.admin.objectivemode.vo.ObjectiveModeRespExVO;
+import cn.fengp.basic.module.nmt.dal.dataobject.evaluateplan.EvaluatePlanExDO;
+import cn.fengp.basic.module.nmt.dal.dataobject.objectivemode.ObjectiveModeExDO;
 import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -53,6 +56,14 @@ public class EvaluatePlanController {
         return success(true);
     }
 
+    @PutMapping("/save-list")
+    @Operation(summary = "保存课程考核计划集合")
+    @PreAuthorize("@ss.hasPermission('nmt:evaluate-plan:update')")
+    public CommonResult<Boolean> saveEvaluatePlanList(@Valid @RequestBody List<EvaluatePlanSaveReqVO> reqVOs) {
+        evaluatePlanService.saveEvaluatePlanList(reqVOs);
+        return success(true);
+    }
+
     @DeleteMapping("/delete")
     @Operation(summary = "删除课程考核计划")
     @Parameter(name = "id", description = "编号", required = true)
@@ -86,6 +97,14 @@ public class EvaluatePlanController {
     public CommonResult<PageResult<EvaluatePlanRespVO>> getEvaluatePlanPage(@Valid EvaluatePlanPageReqVO pageReqVO) {
         PageResult<EvaluatePlanDO> pageResult = evaluatePlanService.getEvaluatePlanPage(pageReqVO);
         return success(BeanUtils.toBean(pageResult, EvaluatePlanRespVO.class));
+    }
+
+    @GetMapping("/list")
+    @Operation(summary = "获得课程考核计划列表")
+    @PreAuthorize("@ss.hasPermission('nmt:evaluate-plan:query')")
+    public CommonResult<List<EvaluatePlanRespExVO>> listEvaluatePlan(@RequestParam("courseId") Long courseId) {
+        List<EvaluatePlanExDO> evaluatePlanExDOs = evaluatePlanService.listEvaluatePlan(courseId);
+        return success(BeanUtils.toBean(evaluatePlanExDOs, EvaluatePlanRespExVO.class));
     }
 
     @GetMapping("/export-excel")

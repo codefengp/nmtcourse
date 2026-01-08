@@ -3,16 +3,19 @@
   <el-row :gutter="16">
     <!-- 左侧说明 -->
     <el-col :span="3">
-      <el-card class="desc-card">
+      <el-card>
         <template #header>
-          <span class="desc-title">考核计划说明</span>
+          <span class="desc-title">考核计划说明:</span>
         </template>
         <div class="desc-content">
           <p>
-            1. 各课程目标下不同考核方式的评价总分为课程目标达成度的重要依据；
+            1、各课程目标下不同考核方式的评价总分为课程大纲中达成度评价总分;
           </p>
           <p>
-            2. 每种考核方式下可配置多个考核内容，多个内容请使用“、”（顿号）分隔；
+            2、您可以在右侧表格“考核内容”-列中维护考查分课程目标的考核内容（题目)，多项考核内容（题目）之间可以用“、”(顿号）隔开;
+          </p>
+          <p>
+            3、考核分数之和等于评价总分，分数显示绿色，反之显示红色;
           </p>
         </div>
       </el-card>
@@ -33,7 +36,7 @@
                 编辑
               </el-button>
               <el-button
-                  type="success"
+                  type="primary"
                   v-if="editable"
                   @click="save"
               >
@@ -81,8 +84,14 @@
                   v-model="row.score"
                   :min="0"
                   :controls="false"
+                  :class="isScoreValid(row) ? 'score-valid' : 'score-invalid'"
               />
-              <span v-else>{{ row.score ?? '' }}</span>
+              <span
+                v-else
+                :class="isScoreValid(row) ? 'score-valid' : 'score-invalid'"
+              >
+              {{ row.score ?? '' }}
+            </span>
             </template>
           </el-table-column>
 
@@ -107,94 +116,38 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-
-/**
- * 页面 VO（与你给出的一致）
- */
-export interface RowVO {
-  objectiveModeId: number
-  objectiveId: number
-  objectiveName: string
-
-  modeId: number
-  modeName: string
-
-  totalScore: number
-
-  // EvaluatePlan
-  id?: number
-  score?: number
-  content?: string
-}
+import {EvaluatePlanApi,RowVO} from "@/api/nmt/evaluateplan";
+//课程id
+const courseId = Number(useRoute().query.id)
 
 /**
  * 保存用对象
  */
 interface EvaluatePlan {
-  id?: number
-  objectiveModeId: number
-  objectiveId: number
-  modeId: number
-  score: number
-  content: string
+  id: number
+  objectiveModeId?: number
+  objectiveId?: number
+  modeId?: number
+  score?: number
+  content?: string
 }
 
 const editable = ref(false)
 const tableData = ref<RowVO[]>([])
 
-/* ================= 模拟接口（替换成真实接口） ================= */
-
-const getEvaluatePlanList = async (): Promise<RowVO[]> => {
-  return [
-    {
-      objectiveModeId: 1,
-      objectiveId: 1,
-      objectiveName: '课程目标1',
-      modeId: 1,
-      modeName: '平时考核',
-      totalScore: 0.3,
-      id: 101,
-      score: 10,
-      content: '作业'
-    },
-    {
-      objectiveModeId: 1,
-      objectiveId: 1,
-      objectiveName: '课程目标1',
-      modeId: 1,
-      modeName: '平时考核',
-      totalScore: 0.3,
-      id: 102,
-      score: 10,
-      content: '测验'
-    },
-    {
-      objectiveModeId: 2,
-      objectiveId: 1,
-      objectiveName: '课程目标1',
-      modeId: 2,
-      modeName: '期末考试',
-      totalScore: 0.7,
-      id: 103,
-      score: 70,
-      content: '期末试卷'
-    }
-  ]
-}
-
-const saveEvaluatePlans = async (plans: EvaluatePlan[]) => {
-  console.log('保存数据：', plans)
-}
-
 /* ================= 数据加载 ================= */
 const loadData = async () => {
-  const res = await getEvaluatePlanList()
-  tableData.value = res
+  //清空数据
+  tableData.value = []
+  const data = await EvaluatePlanApi.listEvaluatePlan(courseId)
+  tableData.value = data
 }
 
-/**
- * 初始化加载数据 */
-onMounted(loadData)
+/** 初始化 **/
+onMounted(async () => {
+  //1.列表数据
+  await loadData()
+})
 
 /* ================= 合并单元格逻辑 ================= */
 const spanMethod = ({
@@ -255,39 +208,44 @@ const spanMethod = ({
   return [1, 1]
 }
 
+// 判断当前行的分数是否有效
+const isScoreValid = (row: RowVO) => {
+  // 找到同一组（同一课程目标 + 同一考核方式）的所有行
+  const groupRows = tableData.value.filter(item =>
+    item.objectiveId === row.objectiveId &&
+    item.modeId === row.modeId
+  )
+
+  // 计算该组所有分数之和
+  const sum = groupRows.reduce((total, item) => total + (item.score || 0), 0)
+
+  // 比较和与总分（允许0.01的误差）
+  return Math.abs(sum - row.totalScore) < 0.01
+}
+
 /* ================= 保存 / 取消 ================= */
 
 const save = async () => {
   const plans: EvaluatePlan[] = []
-
   tableData.value.forEach(row => {
-    if (!row.content) return
-
-    const contents = row.content
-        .split('、')
-        .map(c => c.trim())
-        .filter(Boolean)
-
-    contents.forEach(content => {
-      plans.push({
-        id: row.id,
-        objectiveModeId: row.objectiveModeId,
-        objectiveId: row.objectiveId,
-        modeId: row.modeId,
-        score: row.score ?? 0,
-        content
-      })
+    //没有id,并且考核分数或者考核内容任一为空，不保存数据
+    if(!row.id && (!row.score || !row.content)){
+      return
+    }
+    plans.push({
+      id: row.id,
+      objectiveModeId: row.objectiveModeId,
+      objectiveId: row.objectiveId,
+      modeId: row.modeId,
+      score: row.score ?? 0,
+      content: row.content
     })
   })
-
-  if (!plans.length) {
-    ElMessage.warning('没有可保存的数据')
-    return
+  if (plans.length) {
+    //保存数据
+    await EvaluatePlanApi.saveEvaluatePlanList(plans)
+    ElMessage.success('保存成功')
   }
-
-  await saveEvaluatePlans(plans)
-
-  ElMessage.success('保存成功')
   editable.value = false
   await loadData()
 }
@@ -300,10 +258,6 @@ const save = async () => {
   align-items: center;
 }
 
-.desc-card {
-  height: 100%;
-}
-
 .desc-title {
   font-weight: 600;
 }
@@ -311,5 +265,15 @@ const save = async () => {
 .desc-content {
   font-size: 14px;
   line-height: 1.8;
+}
+
+.score-valid {
+  color: #58d719; /* 绿色 */
+  font-weight: bold;
+}
+
+.score-invalid {
+  color: #ea1717; /* 红色 */
+  font-weight: bold;
 }
 </style>
