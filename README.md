@@ -551,8 +551,8 @@ FROM m.daocloud.io/docker.io/eclipse-temurin:17-jre
 ## 创建目录，并使用它作为工作目录
 RUN mkdir -p /app-server
 WORKDIR /app-server
-## 将后端项目的 Jar 文件，复制到镜像中
-COPY fpbasic-server.jar app.jar
+## 将后端项目的 Jar 文件，复制到镜像中(不复制，使用挂载方式)
+#COPY fpbasic-server.jar app.jar
 
 ## 设置 TZ 时区
 ## 设置 JAVA_OPTS 环境变量，可通过 docker run -e "JAVA_OPTS=" 进行覆盖
@@ -571,6 +571,8 @@ ENTRYPOINT java ${JAVA_OPTS} -Djava.security.egd=file:/dev/./urandom -jar app.ja
 cd /usr/local/nmtcourse/app-server
 # -t:指定镜像名和标签 -f:指定dockerfile文件  . :表示在当前目录下查找对应的dockerfile来构建镜像
 docker build -t app-server -f app_dockerfile .
+#创建日志目录
+mkdir logs
 ```
 
 ③ 在 `/usr/local/nmtcourse/app-server` 目录下，新建 Shell 脚本 `deploy.sh`，使用 Docker 启动后端项目。编写内容如下：
@@ -579,33 +581,49 @@ docker build -t app-server -f app_dockerfile .
 #!/bin/bash
 set -e
 
-## jar更新需要重新构建镜像(原因 COPY fpbasic-server.jar app.jar)
-echo "开始构建 app-server 镜像"
-docker build -t app-server -f app_dockerfile .
+echo "部署 app-server 容器..."
 
-## 第一步：删除可能启动的老 app-server 容器
-echo "开始删除 app-server 容器"
-docker stop app-server || true
-docker rm app-server || true
-echo "完成删除 app-server 容器"
+# 判断容器是否存在
+if docker ps -a --format '{{.Names}}' | grep -q '^app-server$'; then
+    # 容器存在，停止后启动
+    docker stop app-server
+    echo "已停止 app-server 容器"
+    docker start app-server
+else
+    # 容器不存在，直接创建
+    echo "app-server 容器不存在，正在创建..."
+    mkdir -p /usr/local/nmtcourse/app-server/logs   # 确保日志目录存在
+    docker run -d \
+        --name app-server \
+        -p 48080:48080 \
+        -e "SPRING_PROFILES_ACTIVE=dev" \
+        -v /usr/local/nmtcourse/app-server/fpbasic-server.jar:/app-server/app.jar \
+        -v /usr/local/nmtcourse/app-server/logs:/root/logs \
+        app-server
+fi
 
-## 第二步：启动新的 app-server 容器 \
-echo "开始启动 app-server 容器"
-docker run -d \
---name app-server \
--p 48080:48080 \
--e "SPRING_PROFILES_ACTIVE=dev" \
--v /usr/local/nmtcourse/app-server:/root/logs/ \
-app-server
-echo "正在启动 app-server 容器中，需要等待 60 秒左右"
+echo "app-server 容器已启动，应用可能需要约 60 秒完成启动"
 ```
 
+- **挂载jar,以后部署，必须先stop 容器，然后上传jar包**
 - 应用日志文件，挂载到服务器的的 `/usr/local/nmtcourse/app-server` 目录下
 - 通过 `SPRING_PROFILES_ACTIVE` 设置为 `dev` 开发环境
 
 ### 2.5 启动后端
 
+**首次启动：**
+
 执行 `sh deploy.sh` 命令，使用 Docker 启动后端项目。
+
+**后续更新部署：**
+
+```bash
+docker stop app-server
+上传jar包
+sh deploy.sh
+```
+
+
 
 ### 2.6 查看日志
 
