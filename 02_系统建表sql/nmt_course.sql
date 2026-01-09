@@ -80,3 +80,33 @@ CREATE TABLE `nmt_evaluate_plan` (
   ) ENGINE=InnoDB
   DEFAULT CHARSET=utf8mb4
   COMMENT='课程考核计划表';
+  
+  
+-- 创建教学班级表
+CREATE TABLE nmt_teach_class (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+    number VARCHAR(50) NOT NULL COMMENT '班级编号',
+    name VARCHAR(100) NOT NULL COMMENT '班级名称',
+    course_id BIGINT NOT NULL COMMENT '课程ID',
+    total_number INT DEFAULT 0 COMMENT '班级人数',
+    teacher_name VARCHAR(100) COMMENT '负责教师',
+	creator VARCHAR(64) DEFAULT '' COMMENT '创建者',
+	create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+	updater VARCHAR(64) DEFAULT '' COMMENT '更新者',
+	update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+	deleted BIT(1) DEFAULT b'0' COMMENT '是否删除'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='教学班级表';
+
+-- 创建班级学生表
+CREATE TABLE nmt_class_student (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+    name VARCHAR(100) NOT NULL COMMENT '学生姓名',
+    number VARCHAR(50) NOT NULL COMMENT '学号',
+    class_id BIGINT NOT NULL COMMENT '所属班级ID',
+	creator VARCHAR(64) DEFAULT '' COMMENT '创建者',
+	create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+	updater VARCHAR(64) DEFAULT '' COMMENT '更新者',
+	update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+	deleted BIT(1) DEFAULT b'0' COMMENT '是否删除'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='班级学生表';
+
