@@ -216,12 +216,18 @@
                 >
                   <Icon icon="ep:grid" />课程大纲
                 </el-dropdown-item>
-                  <el-dropdown-item
-                          command="evaluatePlan"
-                          v-if="checkPermi(['nmt:course-info:update'])"
-                  >
-                      <Icon icon="ep:document" />考核计划
-                  </el-dropdown-item>
+                <el-dropdown-item
+                        command="evaluatePlan"
+                        v-if="checkPermi(['nmt:course-info:update'])"
+                >
+                    <Icon icon="ep:document" />考核计划
+                </el-dropdown-item>
+                <el-dropdown-item
+                  command="teachClass"
+                  v-if="checkPermi(['nmt:course-info:query'])"
+                >
+                  <Icon icon="ep:avatar" />班级成绩
+                </el-dropdown-item>
                 <el-dropdown-item
                   command="handleDelete"
                   v-if="checkPermi(['nmt:course-info:delete'])"
@@ -370,6 +376,9 @@ const handleCommand = (command: string, row: CourseInfo) => {
         case 'evaluatePlan':
             evaluatePlan(row.id)
             break
+        case 'teachClass':
+          teachClass(row.id)
+          break
         default:
             break
     }
@@ -389,6 +398,14 @@ const courseOutline = (id: number) => {
 const evaluatePlan = (id: number) => {
     // 跳转页面并设置请求参数，使用 `query` 属性
     push('/course/course-detail/evaluate-plan?id=' + id)
+}
+
+/**
+ * 教学班级
+ */
+const teachClass = (id: number) => {
+  // 跳转页面并设置请求参数，使用 `query` 属性
+  push('/course/course-detail/teach-class?id=' + id)
 }
 
 /** 初始化 **/
