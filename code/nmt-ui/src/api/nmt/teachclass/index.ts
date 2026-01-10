@@ -1,5 +1,4 @@
 import request from '@/config/axios'
-import type { Dayjs } from 'dayjs';
 
 /** 教学班级信息 */
 export interface TeachClass {
@@ -47,4 +46,4 @@ export const TeachClassApi = {
   exportTeachClass: async (params) => {
     return await request.download({ url: `/nmt/teach-class/export-excel`, params })
   },
-}
+}

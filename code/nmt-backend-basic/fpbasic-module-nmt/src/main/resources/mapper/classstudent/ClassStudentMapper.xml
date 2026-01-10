@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.fengp.basic.module.nmt.dal.mysql.classstudent.ClassStudentMapper">
+
+    <select id="selectPageEx" resultType="cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentExDO">
+        select t.id,t.name,t.number,t1.name as class_name
+        from nmt_class_student t left join nmt_teach_class t1 on t.class_id = t1.id
+        where 1 = 1
+        <if test="reqVO != null">
+            <if test="reqVO.classId != null and reqVO.classId != ''">
+                AND class_id = #{reqVO.classId}
+            </if>
+            <if test="reqVO.name != null and reqVO.name != ''">
+                AND name LIKE CONCAT('%', #{reqVO.name}, '%')
+            </if>
+
+            <if test="reqVO.number != null and reqVO.number != ''">
+                AND number LIKE CONCAT('%', #{reqVO.number}, '%')
+            </if>
+        </if>
+        order by t.number
+    </select>
+
+</mapper>

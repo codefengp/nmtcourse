@@ -1,0 +1,105 @@
+package cn.fengp.basic.module.nmt.controller.admin.classstudent;
+
+import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentExDO;
+import org.springframework.web.bind.annotation.*;
+import jakarta.annotation.Resource;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.security.access.prepost.PreAuthorize;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Operation;
+
+import jakarta.validation.constraints.*;
+import jakarta.validation.*;
+import jakarta.servlet.http.*;
+import java.util.*;
+import java.io.IOException;
+
+import cn.fengp.basic.framework.common.pojo.PageParam;
+import cn.fengp.basic.framework.common.pojo.PageResult;
+import cn.fengp.basic.framework.common.pojo.CommonResult;
+import cn.fengp.basic.framework.common.util.object.BeanUtils;
+import static cn.fengp.basic.framework.common.pojo.CommonResult.success;
+
+import cn.fengp.basic.framework.excel.core.util.ExcelUtils;
+
+import cn.fengp.basic.framework.apilog.core.annotation.ApiAccessLog;
+import static cn.fengp.basic.framework.apilog.core.enums.OperateTypeEnum.*;
+
+import cn.fengp.basic.module.nmt.controller.admin.classstudent.vo.*;
+import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentDO;
+import cn.fengp.basic.module.nmt.service.classstudent.ClassStudentService;
+
+@Tag(name = "管理后台 - 班级学生")
+@RestController
+@RequestMapping("/nmt/class-student")
+@Validated
+public class ClassStudentController {
+
+    @Resource
+    private ClassStudentService classStudentService;
+
+    @PostMapping("/create")
+    @Operation(summary = "创建班级学生")
+    @PreAuthorize("@ss.hasPermission('nmt:class-student:create')")
+    public CommonResult<Long> createClassStudent(@Valid @RequestBody ClassStudentSaveReqVO createReqVO) {
+        return success(classStudentService.createClassStudent(createReqVO));
+    }
+
+    @PutMapping("/update")
+    @Operation(summary = "更新班级学生")
+    @PreAuthorize("@ss.hasPermission('nmt:class-student:update')")
+    public CommonResult<Boolean> updateClassStudent(@Valid @RequestBody ClassStudentSaveReqVO updateReqVO) {
+        classStudentService.updateClassStudent(updateReqVO);
+        return success(true);
+    }
+
+    @DeleteMapping("/delete")
+    @Operation(summary = "删除班级学生")
+    @Parameter(name = "id", description = "编号", required = true)
+    @PreAuthorize("@ss.hasPermission('nmt:class-student:delete')")
+    public CommonResult<Boolean> deleteClassStudent(@RequestParam("id") Long id) {
+        classStudentService.deleteClassStudent(id);
+        return success(true);
+    }
+
+    @DeleteMapping("/delete-list")
+    @Parameter(name = "ids", description = "编号", required = true)
+    @Operation(summary = "批量删除班级学生")
+                @PreAuthorize("@ss.hasPermission('nmt:class-student:delete')")
+    public CommonResult<Boolean> deleteClassStudentList(@RequestParam("ids") List<Long> ids) {
+        classStudentService.deleteClassStudentListByIds(ids);
+        return success(true);
+    }
+
+    @GetMapping("/get")
+    @Operation(summary = "获得班级学生")
+    @Parameter(name = "id", description = "编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('nmt:class-student:query')")
+    public CommonResult<ClassStudentRespVO> getClassStudent(@RequestParam("id") Long id) {
+        ClassStudentDO classStudent = classStudentService.getClassStudent(id);
+        return success(BeanUtils.toBean(classStudent, ClassStudentRespVO.class));
+    }
+
+    @GetMapping("/page")
+    @Operation(summary = "获得班级学生分页")
+    @PreAuthorize("@ss.hasPermission('nmt:class-student:query')")
+    public CommonResult<PageResult<ClassStudentRespExVO>> getClassStudentPage(@Valid ClassStudentPageReqVO pageReqVO) {
+        PageResult<ClassStudentExDO> pageResult = classStudentService.getClassStudentPage(pageReqVO);
+        return success(BeanUtils.toBean(pageResult, ClassStudentRespExVO.class));
+    }
+
+    /*@GetMapping("/export-excel")
+    @Operation(summary = "导出班级学生 Excel")
+    @PreAuthorize("@ss.hasPermission('nmt:class-student:export')")
+    @ApiAccessLog(operateType = EXPORT)
+    public void exportClassStudentExcel(@Valid ClassStudentPageReqVO pageReqVO,
+              HttpServletResponse response) throws IOException {
+        pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
+        List<ClassStudentDO> list = classStudentService.getClassStudentPage(pageReqVO).getList();
+        // 导出 Excel
+        ExcelUtils.write(response, "班级学生.xls", "数据", ClassStudentRespVO.class,
+                        BeanUtils.toBean(list, ClassStudentRespVO.class));
+    }*/
+
+}

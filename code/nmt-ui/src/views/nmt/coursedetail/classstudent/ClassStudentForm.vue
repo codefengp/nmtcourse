@@ -7,14 +7,11 @@
       label-width="100px"
       v-loading="formLoading"
     >
-      <el-form-item label="班级编号" prop="number">
-        <el-input v-model="formData.number" placeholder="请输入班级编号" />
+      <el-form-item label="学生姓名" prop="name">
+        <el-input v-model="formData.name" placeholder="请输入学生姓名" />
       </el-form-item>
-      <el-form-item label="班级名称" prop="name">
-        <el-input v-model="formData.name" placeholder="请输入班级名称" />
-      </el-form-item>
-      <el-form-item label="负责教师" prop="teacherName">
-        <el-input v-model="formData.teacherName" placeholder="请输入负责教师" />
+      <el-form-item label="学号" prop="number">
+        <el-input v-model="formData.number" placeholder="请输入学号" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -24,10 +21,10 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import { TeachClassApi, TeachClass } from '@/api/nmt/teachclass'
+import { ClassStudentApi, ClassStudent } from '@/api/nmt/classstudent'
 
-/** 教学班级 表单 */
-defineOptions({ name: 'TeachClassForm' })
+/** 班级学生 表单 */
+defineOptions({ name: 'ClassStudentForm' })
 
 const { t } = useI18n() // 国际化
 const message = useMessage() // 消息弹窗
@@ -38,20 +35,18 @@ const formLoading = ref(false) // 表单的加载中：1）修改时的数据加
 const formType = ref('') // 表单的类型：create - 新增；update - 修改
 const formData = ref({
   id: undefined,
-  number: undefined,
   name: undefined,
-  courseId: 0,
-  totalNumber: undefined,
-  teacherName: undefined,
+  number: undefined,
+  classId: undefined,
 })
 const formRules = reactive({
-  number: [{ required: true, message: '班级编号不能为空', trigger: 'blur' }],
-  name: [{ required: true, message: '班级名称不能为空', trigger: 'blur' }],
+  name: [{ required: true, message: '学生姓名不能为空', trigger: 'blur' }],
+  number: [{ required: true, message: '学号不能为空', trigger: 'blur' }],
 })
 const formRef = ref() // 表单 Ref
 
 /** 打开弹窗 */
-const open = async (type: string, courseId: number,id?: number) => {
+const open = async (type: string, classId: number,id?: number) => {
   dialogVisible.value = true
   dialogTitle.value = t('action.' + type)
   formType.value = type
@@ -60,13 +55,12 @@ const open = async (type: string, courseId: number,id?: number) => {
   if (id) {
     formLoading.value = true
     try {
-      formData.value = await TeachClassApi.getTeachClass(id)
+      formData.value = await ClassStudentApi.getClassStudent(id)
     } finally {
       formLoading.value = false
     }
   }
-  //课程id
-  formData.value.courseId = courseId
+  formData.value.classId = classId
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
 
@@ -78,12 +72,12 @@ const submitForm = async () => {
   // 提交请求
   formLoading.value = true
   try {
-    const data = formData.value as unknown as TeachClass
+    const data = formData.value as unknown as ClassStudent
     if (formType.value === 'create') {
-      await TeachClassApi.createTeachClass(data)
+      await ClassStudentApi.createClassStudent(data)
       message.success(t('common.createSuccess'))
     } else {
-      await TeachClassApi.updateTeachClass(data)
+      await ClassStudentApi.updateClassStudent(data)
       message.success(t('common.updateSuccess'))
     }
     dialogVisible.value = false
@@ -98,11 +92,9 @@ const submitForm = async () => {
 const resetForm = () => {
   formData.value = {
     id: undefined,
-    number: undefined,
     name: undefined,
-    courseId: 0,
-    totalNumber: undefined,
-    teacherName: undefined,
+    number: undefined,
+    classId: undefined,
   }
   formRef.value?.resetFields()
 }

@@ -17,6 +17,9 @@
     <!-- 右侧：表格 + 新增按钮，占9份 -->
     <el-col :span="19">
       <el-card class="table-card">
+        <template #header>
+          <span class="card-title">教学班级信息</span>
+        </template>
         <div class="table-header">
           <el-button
             type="primary"
@@ -49,6 +52,14 @@
                 v-hasPermi="['nmt:teach-class:update']"
               >
                 编辑
+              </el-button>
+              <el-button
+                link
+                type="primary"
+                @click="handleStudent(scope.row.id)"
+                v-hasPermi="['nmt:class-student:query']"
+              >
+                学生管理
               </el-button>
               <el-button
                 link
@@ -87,6 +98,7 @@ defineOptions({ name: 'TeachClass' })
 
 const message = useMessage()
 const { t } = useI18n()
+const { push } = useRouter()
 
 const loading = ref(true)
 const list = ref<TeachClass[]>([])
@@ -158,7 +170,13 @@ const getList = async () => {
 
 /** 添加/修改操作 */
 const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
+  formRef.value.open(type, courseId,id)
+}
+
+/** 学生管理 */
+const handleStudent = (id: number) => {
+  // 跳转页面并设置请求参数，使用 `query` 属性
+  push('/course/course-detail/class-student?id=' + id)
 }
 
 /** 删除操作 */
@@ -174,7 +192,7 @@ const handleDelete = async (id: number) => {
 /** 初始化 */
 onMounted(async () => {
   await getDetail(courseId)
-  getList()
+  await getList()
 })
 </script>
 
