@@ -3,11 +3,11 @@ package cn.fengp.basic.module.nmt.service.classstudent;
 import java.util.*;
 
 import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentExDO;
+import com.alibaba.fastjson.JSONObject;
 import jakarta.validation.*;
 import cn.fengp.basic.module.nmt.controller.admin.classstudent.vo.*;
 import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentDO;
 import cn.fengp.basic.framework.common.pojo.PageResult;
-import cn.fengp.basic.framework.common.pojo.PageParam;
 
 /**
  * 班级学生 Service 接口
@@ -60,5 +60,19 @@ public interface ClassStudentService {
      * @return 班级学生分页
      */
     PageResult<ClassStudentExDO> getClassStudentPage(ClassStudentPageReqVO pageReqVO);
+
+    /**
+     * 验证导入数据
+     * @param list
+     * @return
+     */
+    JSONObject validateImport(List<ClassStudentImportExcelVO> list);
+
+    /**
+     * 导入数据
+     * @param list
+     * @return
+     */
+    void importExcel(List<ClassStudentSaveReqVO> list);
 
 }

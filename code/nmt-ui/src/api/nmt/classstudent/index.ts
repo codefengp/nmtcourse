@@ -45,4 +45,19 @@ export const ClassStudentApi = {
   exportClassStudent: async (params) => {
     return await request.download({ url: `/nmt/class-student/export-excel`, params })
   },
+
+  // 下载导入模板
+  importTemplate : async () => {
+      return await request.download({ url: '/nmt/class-student/get-import-template' })
+  },
+
+  // 导出错误
+  outFail : async (data: string) => {
+      return await request.downloadFile({ url: `/nmt/class-student/out-fail`, data })
+  },
+
+  // 导入数据
+  importData : async (data) => {
+      return await request.post({ url: `/nmt/class-student/import`, data })
+  }
 }

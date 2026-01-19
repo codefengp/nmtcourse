@@ -38,6 +38,14 @@
           <Icon icon="ep:plus" class="mr-5px" /> 新增
         </el-button>
         <el-button
+                type="warning"
+                plain
+                @click="handleImport"
+                v-hasPermi="['nmt:class-student:create']"
+        >
+            <Icon icon="ep:upload" class="mr-5px" /> 导入
+        </el-button>
+        <el-button
           type="success"
           plain
           @click="handleExport"
@@ -105,6 +113,8 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <ClassStudentForm ref="formRef" @success="getList" />
+  <!-- 用户导入对话框 -->
+  <ImportForm ref="importFormRef" @success="getList" />
 </template>
 
 <script setup lang="ts">
@@ -112,6 +122,7 @@ import { isEmpty } from '@/utils/is'
 import download from '@/utils/download'
 import { ClassStudentApi, ClassStudent } from '@/api/nmt/classstudent'
 import ClassStudentForm from './ClassStudentForm.vue'
+import ImportForm from './ImportForm.vue'
 
 /** 班级学生 列表 */
 defineOptions({ name: 'ClassStudent' })
@@ -206,6 +217,12 @@ const handleExport = async () => {
   } finally {
     exportLoading.value = false
   }
+}
+
+/** 教师导入 */
+const importFormRef = ref()
+const handleImport = () => {
+    importFormRef.value.open()
 }
 
 /** 初始化 **/
