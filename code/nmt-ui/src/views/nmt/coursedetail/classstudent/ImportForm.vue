@@ -73,13 +73,15 @@ const fileList = ref([]) // 文件列表
 
 const validateShow = ref(false) // 验证显示
 const validateFlag = ref(false) // 验证标识
+const params = ref('') // 参数
 let successData = []//验证成功数据
 let failData = []//验证失败数据
 
 /** 打开弹窗 */
-const open = () => {
+const open = (paramTemp: string) => {
   dialogVisible.value = true
   fileList.value = []
+  params.value = paramTemp
   resetForm()
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
@@ -90,7 +92,8 @@ const submitForm = async () => {
     message.error('请先验证数据')
     return
   }
-  await ClassStudentApi.importData(successData)
+  const data = JSON.stringify({ "params": params.value, "successData": successData })
+  await ClassStudentApi.importData(data)
   dialogVisible.value = false
   // 发送操作成功的事件
   emits('success')

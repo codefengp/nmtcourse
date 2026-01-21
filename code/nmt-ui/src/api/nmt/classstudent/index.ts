@@ -57,7 +57,7 @@ export const ClassStudentApi = {
   },
 
   // 导入数据
-  importData : async (data) => {
+  importData : async (data:any) => {
       return await request.post({ url: `/nmt/class-student/import`, data })
   }
 }

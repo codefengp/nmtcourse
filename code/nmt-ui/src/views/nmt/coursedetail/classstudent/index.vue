@@ -222,7 +222,7 @@ const handleExport = async () => {
 /** 教师导入 */
 const importFormRef = ref()
 const handleImport = () => {
-    importFormRef.value.open()
+    importFormRef.value.open(classId)
 }
 
 /** 初始化 **/

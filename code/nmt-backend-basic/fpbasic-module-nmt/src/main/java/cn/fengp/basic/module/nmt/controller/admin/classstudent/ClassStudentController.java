@@ -1,10 +1,12 @@
 package cn.fengp.basic.module.nmt.controller.admin.classstudent;
 
+import cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil;
 import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentExDO;
 import cn.fengp.basic.module.nmt.util.ExcelExtUtils;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.swagger.v3.oas.annotations.Parameters;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -142,11 +144,17 @@ public class ClassStudentController {
     @PostMapping("/import")
     @Operation(summary = "导入")
     @PreAuthorize("@ss.hasPermission('nmt:class-student:create')")
-    public CommonResult<Boolean> importExcel(@RequestBody String successData) throws Exception {
+    public CommonResult<Boolean> importExcel(@RequestBody String bodyParams) throws Exception {
+        JSONObject parse = JSONObject.parseObject(bodyParams);
+        String params = parse.getString("params");
+        String successData = parse.getString("successData");
+        if (!StringUtils.hasText(params) || !StringUtils.hasText(successData)) {
+            throw ServiceExceptionUtil.invalidParamException("参数不能为空");
+        }
         List<ClassStudentSaveReqVO> data = new ArrayList<>();
         //转成List<JSONObject>
         JSONArray.parseArray(successData).forEach(obj -> data.add(BeanUtils.toBean(obj,ClassStudentSaveReqVO.class)));
-        classStudentService.importExcel(data);
+        classStudentService.importExcel(data,params);
         return success(true);
     }
 
