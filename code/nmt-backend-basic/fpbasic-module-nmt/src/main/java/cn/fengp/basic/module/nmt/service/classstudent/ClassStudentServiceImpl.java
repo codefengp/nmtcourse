@@ -170,6 +170,11 @@ public class ClassStudentServiceImpl implements ClassStudentService {
         return result;
     }
 
+    @Override
+    public void importExcel(List<ClassStudentSaveReqVO> list) {
+
+    }
+
     /**
      * 根据业务校验
      * @param vo
