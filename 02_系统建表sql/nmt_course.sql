@@ -110,3 +110,18 @@ CREATE TABLE nmt_class_student (
 	deleted BIT(1) DEFAULT b'0' COMMENT '是否删除'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='班级学生表';
 
+--创建学生成绩表
+CREATE TABLE `nmt_student_achievement` (
+  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+  `student_id` BIGINT NOT NULL COMMENT '学生ID',
+  `plan_id` BIGINT NOT NULL COMMENT '考核计划ID',
+  `objective_id` BIGINT NOT NULL COMMENT '课程目标ID',
+  `mode_id` BIGINT NOT NULL COMMENT '考核方式ID',
+  `score` DECIMAL(5,2) DEFAULT NULL COMMENT '得分'
+   creator VARCHAR(64) DEFAULT '' COMMENT '创建者',
+   create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+   updater VARCHAR(64) DEFAULT '' COMMENT '更新者',
+   update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+   deleted BIT(1) DEFAULT b'0' COMMENT '是否删除'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学生成绩';
+
