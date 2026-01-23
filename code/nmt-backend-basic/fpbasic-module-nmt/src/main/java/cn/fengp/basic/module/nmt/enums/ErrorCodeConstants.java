@@ -14,5 +14,6 @@ public interface ErrorCodeConstants {
     ErrorCode CLASS_STUDENT_NOT_EXISTS = new ErrorCode(1_010_000_007, "班级学生不存在");
     ErrorCode IMPORT_LIST_IS_EMPTY = new ErrorCode(1_010_000_008, "导入数据不能为空！");
     ErrorCode CLASS_STUDENT_NUMBER_EXISTS = new ErrorCode(1_010_000_009, "学号已存在");
-    ErrorCode CLASS_STUDENT_TABlE_NUMBER_EXISTS = new ErrorCode(1_010_000_009, "Excel文件中学号重复");
+    ErrorCode CLASS_STUDENT_TABlE_NUMBER_EXISTS = new ErrorCode(1_010_000_010, "Excel文件中学号重复");
+    ErrorCode STUDENT_ACHIEVEMENT_NOT_EXISTS = new ErrorCode(1_010_000_011, "学生成绩不存在");
 }

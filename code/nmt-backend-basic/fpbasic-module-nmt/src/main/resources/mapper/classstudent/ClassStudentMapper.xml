@@ -5,7 +5,7 @@
     <select id="selectPageEx" resultType="cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentExDO">
         select t.id,t.name,t.number,t1.name as class_name
         from nmt_class_student t left join nmt_teach_class t1 on t.class_id = t1.id
-        where 1 = 1
+        where 1 = 1 and t.deleted = 0
         <if test="reqVO != null">
             <if test="reqVO.classId != null and reqVO.classId != ''">
                 AND class_id = #{reqVO.classId}

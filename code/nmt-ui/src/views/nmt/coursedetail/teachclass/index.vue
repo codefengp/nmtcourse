@@ -36,9 +36,7 @@
           :data="list"
           :stripe="true"
           :show-overflow-tooltip="true"
-          @selection-change="handleRowCheckboxChange"
         >
-          <el-table-column type="selection" width="55" />
           <el-table-column label="班级编号" align="center" prop="number" />
           <el-table-column label="班级名称" align="center" prop="name" />
           <el-table-column label="班级人数" align="center" prop="totalNumber" />
@@ -48,18 +46,26 @@
               <el-button
                 link
                 type="primary"
-                @click="openForm('update', scope.row.id)"
-                v-hasPermi="['nmt:teach-class:update']"
-              >
-                编辑
-              </el-button>
-              <el-button
-                link
-                type="primary"
                 @click="handleStudent(scope.row.id)"
                 v-hasPermi="['nmt:class-student:query']"
               >
                 学生管理
+              </el-button>
+              <el-button
+                link
+                type="primary"
+                @click="handleAchievement(scope.row)"
+                v-hasPermi="['nmt:class-student:query']"
+              >
+                成绩管理
+              </el-button>
+              <el-button
+                link
+                type="primary"
+                @click="openForm('update', scope.row.id)"
+                v-hasPermi="['nmt:teach-class:update']"
+              >
+                编辑
               </el-button>
               <el-button
                 link
@@ -111,10 +117,6 @@ const queryParams = reactive({
   totalNumber: undefined,
   teacherName: undefined,
 })
-const checkedIds = ref<number[]>([])
-const handleRowCheckboxChange = (records: TeachClass[]) => {
-  checkedIds.value = records.map((item) => item.id!)
-}
 const formRef = ref()
 
 // 课程id
@@ -177,6 +179,12 @@ const openForm = (type: string, id?: number) => {
 const handleStudent = (id: number) => {
   // 跳转页面并设置请求参数，使用 `query` 属性
   push('/course/course-detail/class-student?id=' + id)
+}
+
+/** 成绩管理 */
+const handleAchievement = (id: number) => {
+  // 跳转页面并设置请求参数，使用 `query` 属性
+  push('/course/course-detail/student-achievement?classId=' + id + '&courseId=' + courseId)
 }
 
 /** 删除操作 */
