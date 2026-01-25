@@ -75,4 +75,5 @@ public interface ClassStudentService {
      */
     void importExcel(List<ClassStudentSaveReqVO> list,String params);
 
+    List<ClassStudentDO> listClassStudent(Long classId);
 }

@@ -1,5 +1,6 @@
 package cn.fengp.basic.module.nmt.service.studentachievement;
 
+import cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementPlanDO;
 import cn.hutool.core.collection.CollUtil;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
@@ -80,6 +81,11 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
     @Override
     public PageResult<StudentAchievementDO> getStudentAchievementPage(StudentAchievementPageReqVO pageReqVO) {
         return studentAchievementMapper.selectPage(pageReqVO);
+    }
+
+    @Override
+    public List<StudentAchievementDO> listStudentAchievement(Long classId) {
+        return studentAchievementMapper.listStudentAchievement(classId);
     }
 
 }

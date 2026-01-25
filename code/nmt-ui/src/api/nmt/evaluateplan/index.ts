@@ -8,7 +8,7 @@ export interface EvaluatePlan {
           modeId?: number; // 考核方式ID
           score?: number; // 分数/权重
           content?: string; // 考核内容
-  }
+}
 
 /**
  * 页面 VO

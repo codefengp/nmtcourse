@@ -8,7 +8,7 @@ export interface StudentAchievement {
           objectiveId?: number; // 课程目标ID
           modeId?: number; // 考核方式ID
           score?: number; // 得分
-  }
+}
 
 // 学生成绩 API
 export const StudentAchievementApi = {
@@ -46,4 +46,9 @@ export const StudentAchievementApi = {
   exportStudentAchievement: async (params) => {
     return await request.download({ url: `/nmt/student-achievement/export-excel`, params })
   },
+
+    // 查询学生成绩详情
+    listStudentAchievement: async (id: number) => {
+        return await request.get({ url: `/nmt/student-achievement/list?classId=` + id })
+    },
 }

@@ -16,6 +16,11 @@ export const ClassStudentApi = {
     return await request.get({ url: `/nmt/class-student/page`, params })
   },
 
+  // 查询班级学生
+  listClassStudent: async (id: number) => {
+      return await request.get({ url: `/nmt/class-student/list?classId=` + id })
+  },
+
   // 查询班级学生详情
   getClassStudent: async (id: number) => {
     return await request.get({ url: `/nmt/class-student/get?id=` + id })

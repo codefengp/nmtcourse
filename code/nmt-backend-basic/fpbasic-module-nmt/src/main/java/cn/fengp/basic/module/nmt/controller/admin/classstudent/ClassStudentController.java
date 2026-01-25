@@ -91,6 +91,14 @@ public class ClassStudentController {
         return success(BeanUtils.toBean(pageResult, ClassStudentRespExVO.class));
     }
 
+    @GetMapping("/list")
+    @Operation(summary = "获得班级学生")
+    @PreAuthorize("@ss.hasPermission('nmt:class-student:query')")
+    public CommonResult<List<ClassStudentRespVO>> listClassStudent(@RequestParam("classId") Long classId) {
+        List<ClassStudentDO> students = classStudentService.listClassStudent(classId);
+        return success(BeanUtils.toBean(students, ClassStudentRespVO.class));
+    }
+
 /*    @GetMapping("/export-excel")
     @Operation(summary = "导出班级学生 Excel")
     @PreAuthorize("@ss.hasPermission('nmt:class-student:export')")

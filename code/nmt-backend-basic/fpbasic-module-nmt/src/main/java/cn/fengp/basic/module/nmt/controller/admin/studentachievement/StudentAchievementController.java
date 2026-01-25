@@ -1,5 +1,8 @@
 package cn.fengp.basic.module.nmt.controller.admin.studentachievement;
 
+import cn.fengp.basic.module.nmt.controller.admin.evaluateplan.vo.EvaluatePlanRespExVO;
+import cn.fengp.basic.module.nmt.dal.dataobject.evaluateplan.EvaluatePlanExDO;
+import cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementPlanDO;
 import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -99,6 +102,14 @@ public class StudentAchievementController {
         // 导出 Excel
         ExcelUtils.write(response, "学生成绩.xls", "数据", StudentAchievementRespVO.class,
                         BeanUtils.toBean(list, StudentAchievementRespVO.class));
+    }
+
+    @GetMapping("/list")
+    @Operation(summary = "获得学生成绩数据")
+    @PreAuthorize("@ss.hasPermission('nmt:student-achievement:query')")
+    public CommonResult<List<StudentAchievementRespVO>> listStudentAchievement(@RequestParam("classId") Long classId) {
+        List<StudentAchievementDO> studentAchievementDOs = studentAchievementService.listStudentAchievement(classId);
+        return success(BeanUtils.toBean(studentAchievementDOs, StudentAchievementRespVO.class));
     }
 
 }

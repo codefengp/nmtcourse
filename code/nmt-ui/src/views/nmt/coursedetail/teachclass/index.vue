@@ -54,7 +54,7 @@
               <el-button
                 link
                 type="primary"
-                @click="handleAchievement(scope.row)"
+                @click="handleAchievement(scope.row.id)"
                 v-hasPermi="['nmt:class-student:query']"
               >
                 成绩管理

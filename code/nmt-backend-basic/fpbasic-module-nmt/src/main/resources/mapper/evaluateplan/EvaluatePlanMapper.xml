@@ -9,7 +9,7 @@
         from nmt_objective_mode nom left join nmt_evaluate_plan nep on nom.id = nep.objective_mode_id AND (nep.deleted = 0 OR nep.deleted IS NULL)
         left join nmt_course_objective nco on nom.objective_id = nco.id
         left join nmt_evaluate_mode nem on nom.mode_id = nem.id
-        where nom.course_id = #{courseId} and nom.score != 0
+        where nom.course_id = #{courseId} and nom.score != 0 and nom.deleted = 0
         order by nom.objective_id,nom.mode_id,COALESCE(nep.content, '')
     </select>
 

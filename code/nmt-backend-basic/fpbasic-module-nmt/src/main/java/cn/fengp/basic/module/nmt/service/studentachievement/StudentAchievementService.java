@@ -1,6 +1,8 @@
 package cn.fengp.basic.module.nmt.service.studentachievement;
 
 import java.util.*;
+
+import cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementPlanDO;
 import jakarta.validation.*;
 import cn.fengp.basic.module.nmt.controller.admin.studentachievement.vo.*;
 import cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementDO;
@@ -59,4 +61,11 @@ public interface StudentAchievementService {
      */
     PageResult<StudentAchievementDO> getStudentAchievementPage(StudentAchievementPageReqVO pageReqVO);
 
+    /**
+     * 获得学生成绩
+     *
+     * @param classId 班级
+     * @return 学生成绩
+     */
+    List<StudentAchievementDO> listStudentAchievement(Long classId);
 }

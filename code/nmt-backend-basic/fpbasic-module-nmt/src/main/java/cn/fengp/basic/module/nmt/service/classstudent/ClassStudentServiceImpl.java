@@ -3,6 +3,7 @@ package cn.fengp.basic.module.nmt.service.classstudent;
 import cn.fengp.basic.framework.common.exception.ServiceException;
 import cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil;
 import cn.fengp.basic.framework.common.util.validation.ValidationUtils;
+import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentExDO;
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSONObject;
@@ -127,6 +128,12 @@ public class ClassStudentServiceImpl implements ClassStudentService {
     }
 
     @Override
+    public List<ClassStudentDO> listClassStudent(Long classId) {
+        return classStudentMapper.selectList(new LambdaQueryWrapperX<ClassStudentDO>()
+                .eq(ClassStudentDO::getClassId, classId));
+    }
+
+    @Override
     public JSONObject validateImport(List<ClassStudentImportExcelVO> importDataList) {
         List<JSONObject> successData = new ArrayList<>();//验证成功数据
         List<JSONObject> failData = new ArrayList<>();//验证失败数据
@@ -181,6 +188,7 @@ public class ClassStudentServiceImpl implements ClassStudentService {
                 .collect(Collectors.toList());
         classStudentMapper.insertBatch(studentDOS);
     }
+
 
     /**
      * 根据业务校验

@@ -1,109 +1,155 @@
 <template>
+  <el-table
+      :data="tableData"
+      border
+      style="width: 100%"
+      v-loading="loading"
+      :span-method="spanMethod"
+  >
+    <el-table-column
+        v-for="(col, index) in tableColumns"
+        :key="index"
+        :label="col.label"
+        :prop="col.prop"
+        align="center"
+        width="120"
+    />
+  </el-table>
 </template>
 
 <script setup lang="ts">
-import { StudentAchievementApi, StudentAchievement } from '@/api/nmt/studentachievement'
+import { StudentAchievementApi } from '@/api/nmt/studentachievement'
+import { EvaluatePlanApi } from '@/api/nmt/evaluateplan'
+import { ClassStudentApi } from '@/api/nmt/classstudent'
 
-/** 学生成绩 列表 */
-defineOptions({ name: 'StudentAchievement' })
-const message = useMessage() // 消息弹窗
-const { t } = useI18n() // 国际化
-
-const loading = ref(true) // 列表的加载中
-const list = ref<StudentAchievement[]>([]) // 列表的数据
-const total = ref(0) // 列表的总页数
-const queryParams = reactive({
-  pageNo: 1,
-  pageSize: 10,
-  studentId: undefined,
-  planId: undefined,
-  objectiveId: undefined,
-  modeId: undefined,
-  score: undefined,
-})
-const queryFormRef = ref() // 搜索的表单
-const exportLoading = ref(false) // 导出的加载中
-
+const loading = ref(false)
 const classId = Number(useRoute().query.classId)
 const courseId = Number(useRoute().query.courseId)
 
-/** 查询列表 */
-const getList = async () => {
+const planList = ref<any[]>([])
+const studentList = ref<any[]>([])
+const achievementList = ref<any[]>([])
+const tableData = ref<any[]>([])
+const tableColumns = ref<any[]>([])
+
+/** 初始化 */
+onMounted(() => {
+  getList()
+})
+
+/** 获取数据 */
+async function getList() {
   loading.value = true
   try {
-    const data = await StudentAchievementApi.getStudentAchievementPage(queryParams)
-    list.value = data.list
-    total.value = data.total
+    planList.value = await EvaluatePlanApi.listEvaluatePlan(courseId)
+    studentList.value = await ClassStudentApi.listClassStudent(classId)
+    achievementList.value = await StudentAchievementApi.listStudentAchievement(classId)
+
+    buildTable()
   } finally {
     loading.value = false
   }
 }
 
-/** 搜索按钮操作 */
-const handleQuery = () => {
-  queryParams.pageNo = 1
-  getList()
+/** 构建表格列和行 */
+function buildTable() {
+  const columns: any[] = []
+
+  // 前两列在前四行表头左侧合并显示
+  columns.push({ label: '', prop: 'col1' })
+  columns.push({ label: '', prop: 'col2' })
+
+  // 后面每个 plan 对应一列
+  planList.value.forEach(plan => {
+    columns.push({
+      label: `plan_${plan.id}`,
+      prop: `plan_${plan.id}`
+    })
+  })
+  tableColumns.value = columns
+
+  const rows: any[] = []
+
+  // 第一行：考核方式
+  const row1: any = {}
+  row1.col1 = '考核方式'
+  row1.col2 = ''
+  planList.value.forEach(plan => {
+    row1[`plan_${plan.id}`] = plan.modeName
+  })
+  rows.push(row1)
+
+  // 第二行：考核内容
+  const row2: any = {}
+  row2.col1 = '考核内容'
+  row2.col2 = ''
+  planList.value.forEach(plan => {
+    row2[`plan_${plan.id}`] = plan.content
+  })
+  rows.push(row2)
+
+  // 第三行：课程目标
+  const row3: any = {}
+  row3.col1 = '课程目标'
+  row3.col2 = ''
+  planList.value.forEach(plan => {
+    row3[`plan_${plan.id}`] = `课程目标${plan.objectiveId}`
+  })
+  rows.push(row3)
+
+  // 第四行：总分值
+  const row4: any = {}
+  row4.col1 = '总分值'
+  row4.col2 = ''
+  planList.value.forEach(plan => {
+    row4[`plan_${plan.id}`] = plan.score
+  })
+  rows.push(row4)
+
+  // 第五行：说明
+  const row5: any = {}
+  row5.col1 = '学号'
+  row5.col2 = '姓名'
+  const mergedText = '说明：本表格为在线操作表格，您可直接将学生学号、姓名对应考核内容的成绩复制进表格后点击右上角保存即可！'
+  planList.value.forEach(plan => {
+    row5[`plan_${plan.id}`] = mergedText
+  })
+  rows.push(row5)
+
+  // 学生行
+  studentList.value.forEach(student => {
+    const row: any = { col1: student.number, col2: student.name }
+    planList.value.forEach(plan => {
+      const ach = achievementList.value.find(
+          a => a.studentId === student.id && a.planId === plan.id
+      )
+      row[`plan_${plan.id}`] = ach ? ach.score : ''
+    })
+    rows.push(row)
+  })
+
+  tableData.value = rows
 }
 
-/** 重置按钮操作 */
-const resetQuery = () => {
-  queryFormRef.value.resetFields()
-  handleQuery()
-}
+/** 合并单元格 */
+function spanMethod({ row, columnIndex }: any) {
+  const planCount = planList.value.length
 
-/** 添加/修改操作 */
-const formRef = ref()
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
-}
+  const rowIndex = tableData.value.indexOf(row)
 
-/** 删除按钮操作 */
-const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await StudentAchievementApi.deleteStudentAchievement(id)
-    message.success(t('common.delSuccess'))
-    currentRow.value = {}
-    // 刷新列表
-    await getList()
-  } catch {}
-}
-
-/** 批量删除学生成绩 */
-const handleDeleteBatch = async () => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    await StudentAchievementApi.deleteStudentAchievementList(checkedIds.value);
-    checkedIds.value = [];
-    message.success(t('common.delSuccess'))
-    await getList();
-  } catch {}
-}
-
-const checkedIds = ref<number[]>([])
-const handleRowCheckboxChange = (records: StudentAchievement[]) => {
-  checkedIds.value = records.map((item) => item.id!);
-}
-
-/** 导出按钮操作 */
-const handleExport = async () => {
-  try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
-    const data = await StudentAchievementApi.exportStudentAchievement(queryParams)
-    download.excel(data, '学生成绩.xls')
-  } catch {
-  } finally {
-    exportLoading.value = false
+  // 前四行表头：左两列合并
+  if (rowIndex >= 0 && rowIndex <= 3) {
+    if (columnIndex === 0) return [1, 2]
+    if (columnIndex === 1) return [0, 0]
   }
-}
 
-/** 初始化 **/
-onMounted(() => {
-})
+  // 第五行说明：后面列全部合并
+  if (rowIndex === 4) {
+    if (columnIndex < 2) return [1, 1]
+    return [1, planCount]
+  }
+
+  // 学生行：不合并
+  return [1, 1]
+}
 </script>
