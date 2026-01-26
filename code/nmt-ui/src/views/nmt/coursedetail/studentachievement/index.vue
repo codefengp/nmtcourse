@@ -1,155 +1,170 @@
 <template>
-  <el-table
-      :data="tableData"
-      border
-      style="width: 100%"
-      v-loading="loading"
-      :span-method="spanMethod"
-  >
-    <el-table-column
-        v-for="(col, index) in tableColumns"
-        :key="index"
-        :label="col.label"
-        :prop="col.prop"
-        align="center"
-        width="120"
-    />
-  </el-table>
+  <div style="padding: 20px; background: #fff; color: #333;">
+    <h2 style="text-align: center; margin: 0 0 20px 0; font-size: 24px; letter-spacing: 1px;">
+      {{ courseDetail?.name }} 成绩汇总表
+    </h2>
+
+    <div class="info-wrapper">
+      <div class="info-left">
+        <span>授课年级：<b>{{ courseDetail?.grade ? courseDetail.grade + '级' : '-' }}</b></span>
+        <span>授课学期：<b>{{ courseDetail?.term || '-' }}</b></span>
+        <span>上课班级：<b style="color: #409eff;">{{ classDetail?.name || '-' }}</b></span>
+        <span>负责教师：<b>{{ classDetail?.teacherName || '-' }}</b></span>
+      </div>
+      <div class="info-right">
+        学生人数：<b style="color: #67c23a; font-size: 20px;">{{ classDetail?.totalNumber || 0 }}</b> 人
+      </div>
+    </div>
+
+    <el-table
+        v-loading="loading"
+        :data="tableData"
+        border
+        stripe
+        style="width: 100%"
+        header-cell-class-name="table-header"
+    >
+      <el-table-column label="考核方式" align="center">
+        <el-table-column label="考核内容" align="center">
+          <el-table-column label="课程目标" align="center">
+            <el-table-column prop="number" label="学号" min-width="120" align="center" />
+            <el-table-column prop="name" label="姓名" min-width="90" align="center" />
+          </el-table-column>
+        </el-table-column>
+      </el-table-column>
+
+      <el-table-column
+          v-for="group in groupedPlans"
+          :key="group.modeName"
+          :label="group.modeName"
+          align="center"
+      >
+        <el-table-column
+            v-for="plan in group.children"
+            :key="plan.id"
+            :label="String(plan.content || '')"
+            align="center"
+        >
+          <el-table-column :label="plan.objectiveName" align="center">
+            <el-table-column align="center" min-width="70">
+              <template #header>
+                <div style="line-height: 1.2;">
+                  <div style="font-size: 11px; color: #999; font-weight: normal;">满分</div>
+                  <div style="color: #409eff; font-weight: bold;">{{ plan.score }}</div>
+                </div>
+              </template>
+              <template #default="scope">
+                <span style="font-weight: 500;">{{ scope.row['plan_' + plan.id] }}</span>
+              </template>
+            </el-table-column>
+          </el-table-column>
+        </el-table-column>
+      </el-table-column>
+    </el-table>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { StudentAchievementApi } from '@/api/nmt/studentachievement'
-import { EvaluatePlanApi } from '@/api/nmt/evaluateplan'
-import { ClassStudentApi } from '@/api/nmt/classstudent'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { StudentAchievementApi, StudentAchievement } from '@/api/nmt/studentachievement'
+import { EvaluatePlanApi, RowVO } from '@/api/nmt/evaluateplan'
+import { ClassStudentApi, ClassStudent } from '@/api/nmt/classstudent'
+import { CourseInfoApi, CourseInfo } from '@/api/nmt/courseinfo'
+import { TeachClassApi, TeachClass } from '@/api/nmt/teachclass'
+import { getDictLabel, DICT_TYPE } from "@/utils/dict"
 
 const loading = ref(false)
-const classId = Number(useRoute().query.classId)
-const courseId = Number(useRoute().query.courseId)
+const route = useRoute()
+const classId = Number(route.query.classId)
+const courseId = Number(route.query.courseId)
 
-const planList = ref<any[]>([])
-const studentList = ref<any[]>([])
-const achievementList = ref<any[]>([])
+const courseDetail = ref<Partial<CourseInfo>>({})
+const classDetail = ref<Partial<TeachClass>>({})
+const rawPlans = ref<RowVO[]>([])
 const tableData = ref<any[]>([])
-const tableColumns = ref<any[]>([])
 
-/** 初始化 */
-onMounted(() => {
-  getList()
+const groupedPlans = computed(() => {
+  const groups: { modeName: string; children: RowVO[] }[] = []
+  rawPlans.value.forEach(plan => {
+    let group = groups.find(g => g.modeName === plan.modeName)
+    if (!group) {
+      group = { modeName: plan.modeName || '未知', children: [] }
+      groups.push(group)
+    }
+    group.children.push(plan)
+  })
+  return groups
 })
 
-/** 获取数据 */
+const initData = async () => {
+  try {
+    const [c, t] = await Promise.all([
+      CourseInfoApi.getCourseInfo(courseId),
+      TeachClassApi.getTeachClass(classId)
+    ])
+    courseDetail.value = { name: c.name, grade: c.grade, term: getDictLabel(DICT_TYPE.NMT_TERM, c.term) }
+    classDetail.value = { name: t.name, totalNumber: t.totalNumber, teacherName: t.teacherName }
+  } catch (e) { console.error(e) }
+}
+
 async function getList() {
   loading.value = true
   try {
-    planList.value = await EvaluatePlanApi.listEvaluatePlan(courseId)
-    studentList.value = await ClassStudentApi.listClassStudent(classId)
-    achievementList.value = await StudentAchievementApi.listStudentAchievement(classId)
-
-    buildTable()
-  } finally {
-    loading.value = false
-  }
-}
-
-/** 构建表格列和行 */
-function buildTable() {
-  const columns: any[] = []
-
-  // 前两列在前四行表头左侧合并显示
-  columns.push({ label: '', prop: 'col1' })
-  columns.push({ label: '', prop: 'col2' })
-
-  // 后面每个 plan 对应一列
-  planList.value.forEach(plan => {
-    columns.push({
-      label: `plan_${plan.id}`,
-      prop: `plan_${plan.id}`
+    const [plans, students, achievements] = await Promise.all([
+      EvaluatePlanApi.listEvaluatePlan(courseId),
+      ClassStudentApi.listClassStudent(classId),
+      StudentAchievementApi.listStudentAchievement(classId)
+    ])
+    rawPlans.value = plans as RowVO[]
+    tableData.value = students.map((stu: ClassStudent) => {
+      const row: any = { id: stu.id, name: stu.name, number: stu.number }
+      rawPlans.value.forEach(p => {
+        const match = (achievements as StudentAchievement[]).find(a => a.studentId === stu.id && a.planId === p.id)
+        row[`plan_${p.id}`] = match ? match.score : ''
+      })
+      return row
     })
-  })
-  tableColumns.value = columns
-
-  const rows: any[] = []
-
-  // 第一行：考核方式
-  const row1: any = {}
-  row1.col1 = '考核方式'
-  row1.col2 = ''
-  planList.value.forEach(plan => {
-    row1[`plan_${plan.id}`] = plan.modeName
-  })
-  rows.push(row1)
-
-  // 第二行：考核内容
-  const row2: any = {}
-  row2.col1 = '考核内容'
-  row2.col2 = ''
-  planList.value.forEach(plan => {
-    row2[`plan_${plan.id}`] = plan.content
-  })
-  rows.push(row2)
-
-  // 第三行：课程目标
-  const row3: any = {}
-  row3.col1 = '课程目标'
-  row3.col2 = ''
-  planList.value.forEach(plan => {
-    row3[`plan_${plan.id}`] = `课程目标${plan.objectiveId}`
-  })
-  rows.push(row3)
-
-  // 第四行：总分值
-  const row4: any = {}
-  row4.col1 = '总分值'
-  row4.col2 = ''
-  planList.value.forEach(plan => {
-    row4[`plan_${plan.id}`] = plan.score
-  })
-  rows.push(row4)
-
-  // 第五行：说明
-  const row5: any = {}
-  row5.col1 = '学号'
-  row5.col2 = '姓名'
-  const mergedText = '说明：本表格为在线操作表格，您可直接将学生学号、姓名对应考核内容的成绩复制进表格后点击右上角保存即可！'
-  planList.value.forEach(plan => {
-    row5[`plan_${plan.id}`] = mergedText
-  })
-  rows.push(row5)
-
-  // 学生行
-  studentList.value.forEach(student => {
-    const row: any = { col1: student.number, col2: student.name }
-    planList.value.forEach(plan => {
-      const ach = achievementList.value.find(
-          a => a.studentId === student.id && a.planId === plan.id
-      )
-      row[`plan_${plan.id}`] = ach ? ach.score : ''
-    })
-    rows.push(row)
-  })
-
-  tableData.value = rows
+  } finally { loading.value = false }
 }
 
-/** 合并单元格 */
-function spanMethod({ row, columnIndex }: any) {
-  const planCount = planList.value.length
-
-  const rowIndex = tableData.value.indexOf(row)
-
-  // 前四行表头：左两列合并
-  if (rowIndex >= 0 && rowIndex <= 3) {
-    if (columnIndex === 0) return [1, 2]
-    if (columnIndex === 1) return [0, 0]
-  }
-
-  // 第五行说明：后面列全部合并
-  if (rowIndex === 4) {
-    if (columnIndex < 2) return [1, 1]
-    return [1, planCount]
-  }
-
-  // 学生行：不合并
-  return [1, 1]
-}
+onMounted(() => { initData(); getList(); })
 </script>
+
+<style scoped>
+/* 容器去掉装饰，仅保留底部分割线 */
+.info-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0 20px 0;
+  border-bottom: 1px solid #ebeef5; /* 使用 Element 默认的浅灰色细线 */
+  margin-bottom: 20px;
+  font-size: 16px;
+}
+
+.info-left {
+  display: flex;
+  gap: 30px;
+}
+
+.info-left span {
+  color: #606266;
+}
+
+.info-left b {
+  color: #303133;
+}
+
+/* 表头样式微调 */
+:deep(.table-header) {
+  background-color: #f5f7fa !important;
+  color: #333 !important;
+  font-weight: bold !important;
+}
+
+/* 单元格内容自动挤压 */
+:deep(.el-table .cell) {
+  padding: 0 4px !important;
+}
+</style>
