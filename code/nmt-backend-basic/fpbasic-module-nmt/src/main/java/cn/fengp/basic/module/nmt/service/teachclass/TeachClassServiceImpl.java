@@ -52,6 +52,16 @@ public class TeachClassServiceImpl implements TeachClassService {
     }
 
     @Override
+    public void updateTotalNumber(Long classId, int totalNumber) {
+        TeachClassDO teachClass = teachClassMapper.selectById(classId);
+        if (teachClass == null) {
+            throw exception(TEACH_CLASS_NOT_EXISTS);
+        }
+        teachClass.setTotalNumber(totalNumber);
+        teachClassMapper.updateById(teachClass);
+    }
+
+    @Override
     public void deleteTeachClass(Long id) {
         // 校验存在
         validateTeachClassExists(id);

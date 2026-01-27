@@ -5,6 +5,9 @@ import cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil;
 import cn.fengp.basic.framework.common.util.validation.ValidationUtils;
 import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentExDO;
+import cn.fengp.basic.module.nmt.dal.dataobject.teachclass.TeachClassDO;
+import cn.fengp.basic.module.nmt.dal.mysql.teachclass.TeachClassMapper;
+import cn.fengp.basic.module.nmt.service.teachclass.TeachClassService;
 import cn.hutool.core.collection.CollUtil;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -43,6 +46,8 @@ public class ClassStudentServiceImpl implements ClassStudentService {
 
     @Resource
     private ClassStudentMapper classStudentMapper;
+    @Resource
+    private TeachClassService teachClassService;
 
     @Override
     public Long createClassStudent(ClassStudentSaveReqVO createReqVO) {
@@ -54,7 +59,8 @@ public class ClassStudentServiceImpl implements ClassStudentService {
         // 插入
         ClassStudentDO classStudent = BeanUtils.toBean(createReqVO, ClassStudentDO.class);
         classStudentMapper.insert(classStudent);
-
+        //更新班级人数
+        this.updateClassStudentTotalNumber(createReqVO.getClassId());
         // 返回
         return classStudent.getId();
     }
@@ -76,22 +82,29 @@ public class ClassStudentServiceImpl implements ClassStudentService {
     @Override
     public void deleteClassStudent(Long id) {
         // 校验存在
-        validateClassStudentExists(id);
+        ClassStudentDO classStudentDO = validateClassStudentExists(id);
         // 删除
         classStudentMapper.deleteById(id);
+        //更新班级人数
+        this.updateClassStudentTotalNumber(classStudentDO.getClassId());
     }
 
     @Override
-        public void deleteClassStudentListByIds(List<Long> ids) {
+    public void deleteClassStudentListByIds(List<Long> ids) {
+        ClassStudentDO classStudentDO = classStudentMapper.selectById(ids.get(0));
         // 删除
         classStudentMapper.deleteByIds(ids);
-        }
+        //更新班级人数
+        this.updateClassStudentTotalNumber(classStudentDO.getClassId());
+    }
 
 
-    private void validateClassStudentExists(Long id) {
-        if (classStudentMapper.selectById(id) == null) {
+    private ClassStudentDO validateClassStudentExists(Long id) {
+        ClassStudentDO classStudentDO = classStudentMapper.selectById(id);
+        if (classStudentDO == null) {
             throw exception(CLASS_STUDENT_NOT_EXISTS);
         }
+        return classStudentDO;
     }
 
     /**
@@ -187,6 +200,10 @@ public class ClassStudentServiceImpl implements ClassStudentService {
                 })
                 .collect(Collectors.toList());
         classStudentMapper.insertBatch(studentDOS);
+        //更新班级人数
+        if(Objects.nonNull(studentDOS.get(0))){
+            this.updateClassStudentTotalNumber(studentDOS.get(0).getClassId());
+        }
     }
 
 
@@ -224,6 +241,19 @@ public class ClassStudentServiceImpl implements ClassStudentService {
             return false;
         }
         return true;
+    }
+
+    /**
+     * 更新班级人数
+     * @param classId
+     */
+    private void updateClassStudentTotalNumber(Long classId){
+        if (Objects.isNull(classId)) {
+            throw ServiceExceptionUtil.invalidParamException("班级标识为空");
+        }
+        LambdaQueryWrapperX<ClassStudentDO> wrapperX = new LambdaQueryWrapperX<ClassStudentDO>().eq(ClassStudentDO::getClassId, classId);
+        int count = classStudentMapper.selectCount(wrapperX).intValue();
+        teachClassService.updateTotalNumber(classId,count);
     }
 
 }

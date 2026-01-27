@@ -30,6 +30,14 @@ public interface TeachClassService {
     void updateTeachClass(@Valid TeachClassSaveReqVO updateReqVO);
 
     /**
+     * 更新教学班级总人数
+     *
+     * @param classId 班级编号
+     * @param totalNumber 总人数
+     */
+    void updateTotalNumber(Long classId, int totalNumber);
+
+    /**
      * 删除教学班级
      *
      * @param id 编号
