@@ -52,8 +52,8 @@ export const ClassStudentApi = {
   },
 
   // 下载导入模板
-  importTemplate : async () => {
-      return await request.download({ url: '/nmt/class-student/get-import-template' })
+  importTemplate : async (data) => {
+      return await request.downloadFile({ url: '/nmt/class-student/get-import-template' ,data})
   },
 
   // 导出错误

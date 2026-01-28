@@ -1,5 +1,14 @@
 <template>
   <div class="score-container">
+    <div class="operation-wrapper">
+      <el-button type="primary" @click="handleImport" v-hasPermi="['nmt:student-achievement:create']">
+        <el-icon><Upload /></el-icon><span class="ml-5">导入成绩</span>
+      </el-button>
+      <el-button type="success" @click="handleExport">
+        <el-icon><Download /></el-icon><span class="ml-5">导出报表</span>
+      </el-button>
+    </div>
+
     <h2 class="main-title">{{ courseDetail?.name }} 成绩汇总表</h2>
 
     <div class="info-bar">
@@ -59,17 +68,21 @@
       </el-table-column>
     </el-table>
   </div>
+  <!-- 用户导入对话框 -->
+  <ImportForm ref="importFormRef" @success="init" />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { Upload, Download } from '@element-plus/icons-vue'
 import { StudentAchievementApi } from '@/api/nmt/studentachievement'
 import { EvaluatePlanApi } from '@/api/nmt/evaluateplan'
 import { ClassStudentApi } from '@/api/nmt/classstudent'
 import { CourseInfoApi } from '@/api/nmt/courseinfo'
 import { TeachClassApi } from '@/api/nmt/teachclass'
 import { getDictLabel, DICT_TYPE } from "@/utils/dict"
+import ImportForm from "@/views/nmt/coursedetail/classstudent/ImportForm.vue";
 
 const scoreTable = ref()
 const loading = ref(false)
@@ -82,26 +95,36 @@ const classDetail = ref<any>({})
 const rawPlans = ref<any[]>([])
 const tableData = ref<any[]>([])
 
-// 样式控制：总分值数字仅改字体颜色，背景恢复灰色
+/**
+ * 样式控制：总分值数字仅改字体颜色，背景恢复灰色
+ */
 const handleHeaderStyle = ({ rowIndex, columnIndex }: any) => {
   const baseStyle = { backgroundColor: '#f5f7fa', color: '#333' }
-  // 第四行 (rowIndex 3) 且非首列（即分值数字格）
   if (rowIndex === 3 && columnIndex > 0) {
     return { ...baseStyle, color: '#409eff', fontWeight: 'bold' }
   }
   return baseStyle
 }
 
+/**
+ * 按考核方式分组
+ */
 const groupedPlans = computed(() => {
   const groups: any[] = []
   rawPlans.value.forEach(p => {
     let g = groups.find(x => x.modeName === p.modeName)
-    if (!g) { groups.push({ modeName: p.modeName || '未知', children: [p] }) }
-    else { g.children.push(p) }
+    if (!g) {
+      groups.push({ modeName: p.modeName || '未知', children: [p] })
+    } else {
+      g.children.push(p)
+    }
   })
   return groups
 })
 
+/**
+ * 合并表头说明行 (DOM 操作)
+ */
 const applyMerge = () => {
   const rows = scoreTable.value?.$el.querySelectorAll('.el-table__header tr')
   if (!rows || rows.length < 5) return
@@ -117,6 +140,25 @@ const applyMerge = () => {
   }
 }
 
+/**
+ * 导入按钮点击
+ */
+const importFormRef = ref()
+const handleImport = () => {
+  importFormRef.value.open(classId)
+}
+
+/**
+ * 导出按钮点击
+ */
+const handleExport = () => {
+  console.log('执行导出逻辑')
+  // 此处可调用后端 export 接口
+}
+
+/**
+ * 初始化数据
+ */
 const init = async () => {
   loading.value = true
   try {
@@ -127,9 +169,11 @@ const init = async () => {
       ClassStudentApi.listClassStudent(classId),
       StudentAchievementApi.listStudentAchievement(classId)
     ])
+
     courseDetail.value = { ...c, term: getDictLabel(DICT_TYPE.NMT_TERM, c.term) }
     classDetail.value = t
     rawPlans.value = plans
+
     tableData.value = students.map((s: any) => {
       const row: any = { id: s.id, name: s.name, number: s.number }
       plans.forEach((p: any) => {
@@ -138,7 +182,10 @@ const init = async () => {
       })
       return row
     })
+
     nextTick(applyMerge)
+  } catch (error) {
+    console.error('加载失败', error)
   } finally {
     loading.value = false
   }
@@ -148,9 +195,39 @@ onMounted(init)
 </script>
 
 <style scoped>
-.score-container { padding: 20px; background: #fff; }
-.main-title { text-align: center; margin-bottom: 20px; font-size: 24px; color: #333; }
-.info-bar { display: flex; justify-content: space-between; padding-bottom: 15px; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+.score-container {
+  padding: 20px;
+  background: #fff;
+  position: relative;
+}
+
+/* 右上角按钮组 */
+.operation-wrapper {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 12px;
+  z-index: 10;
+}
+
+.ml-5 { margin-left: 5px; }
+
+.main-title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #333;
+}
+
+.info-bar {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 15px;
+}
+
 .info-left { display: flex; gap: 30px; font-size: 15px; }
 .blue-text { color: #409eff; }
 .green-text { color: #67c23a; font-size: 20px; }
@@ -158,17 +235,32 @@ onMounted(init)
 :deep(.common-header) { font-weight: bold !important; }
 
 /* 合并说明行样式 */
-:deep(.merge-wrapper) { display: flex; align-items: center; height: 44px; width: 100%; }
-:deep(.name-box) {
-  width: 100px; border-right: 1px solid #ebeef5; height: 100%;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+:deep(.merge-wrapper) {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  width: 100%;
 }
+
+:deep(.name-box) {
+  width: 100px;
+  border-right: 1px solid #ebeef5;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 :deep(.remark-box) {
-  flex: 1; text-align: center; color: rgba(0, 0, 0, 0.98);
-  font-weight: normal; /* 取消加粗 */
+  flex: 1;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.98);
+  font-weight: normal;
   font-size: 14px;
 }
 
 :deep(.el-table__header tr:nth-child(5) th) { padding: 0 !important; }
+
 .score-num { font-weight: 500; color: #333; }
 </style>

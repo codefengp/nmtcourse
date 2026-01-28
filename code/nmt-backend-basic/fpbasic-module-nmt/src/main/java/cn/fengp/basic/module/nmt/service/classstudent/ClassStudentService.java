@@ -73,7 +73,7 @@ public interface ClassStudentService {
      * @param list
      * @return
      */
-    void importExcel(List<ClassStudentSaveReqVO> list,String params);
+    void importExcel(List<ClassStudentSaveReqVO> list,String classId);
 
     List<ClassStudentDO> listClassStudent(Long classId);
 }

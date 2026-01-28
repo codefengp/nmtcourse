@@ -191,11 +191,11 @@ public class ClassStudentServiceImpl implements ClassStudentService {
     }
 
     @Override
-    public void importExcel(List<ClassStudentSaveReqVO> list,String params) {
+    public void importExcel(List<ClassStudentSaveReqVO> list,String classId) {
         List<ClassStudentDO> studentDOS = list.stream()
                 .map(stu -> {
                     ClassStudentDO dto = BeanUtils.toBean(stu, ClassStudentDO.class);
-                    dto.setClassId(Long.parseLong(params));
+                    dto.setClassId(Long.parseLong(classId));
                     return dto;
                 })
                 .collect(Collectors.toList());
