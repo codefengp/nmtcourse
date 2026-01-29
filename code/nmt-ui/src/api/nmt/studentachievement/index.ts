@@ -47,8 +47,22 @@ export const StudentAchievementApi = {
     return await request.download({ url: `/nmt/student-achievement/export-excel`, params })
   },
 
-    // 查询学生成绩详情
-    listStudentAchievement: async (id: number) => {
-        return await request.get({ url: `/nmt/student-achievement/list?classId=` + id })
-    },
+  // 查询学生成绩详情
+  listStudentAchievement: async (id: number) => {
+      return await request.get({ url: `/nmt/student-achievement/list?classId=` + id })
+  },
+  // 下载导入模板
+  downloadTemplate : async (data: string) => {
+      return await request.downloadFile({ url: '/nmt/student-achievement/download-template' ,data})
+  },
+
+  // 导出错误
+  outFail : async (data: string) => {
+      return await request.downloadFile({ url: `/nmt/student-achievement/out-fail`, data })
+  },
+
+  // 导入数据
+  importExcelData : async (data: string) => {
+      return await request.post({ url: `/nmt/student-achievement/import-excel-data`, data })
+  }
 }

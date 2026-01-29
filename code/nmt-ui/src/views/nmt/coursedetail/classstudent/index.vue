@@ -113,7 +113,7 @@
 
   <!-- 表单弹窗：添加/修改 -->
   <ClassStudentForm ref="formRef" @success="getList" />
-  <!-- 用户导入对话框 -->
+  <!-- 导入框 -->
   <ImportDialog
       ref="importFormRef"
       title="学生导入"

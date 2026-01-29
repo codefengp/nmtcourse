@@ -68,8 +68,18 @@
       </el-table-column>
     </el-table>
   </div>
-  <!-- 用户导入对话框 -->
-  <ImportForm ref="importFormRef" @success="init" />
+  <!-- 导入框 -->
+  <ImportDialog
+      ref="importFormRef"
+      title="成绩导入"
+      :validate-url="validateUrl"
+      :submit-api="StudentAchievementApi.importExcelData"
+      :template-api="StudentAchievementApi.downloadTemplate"
+      template-file-name="`${courseDetail?.name} ${classDetail?.name || '-'} 成绩导入模板.xls`"
+      :fail-export-api="StudentAchievementApi.outFail"
+      fail-export-file-name="`${courseDetail?.name} ${classDetail?.name || '-'} 成绩导入错误信息.xls`"
+      @success="init"
+  />
 </template>
 
 <script setup lang="ts">
@@ -82,7 +92,8 @@ import { ClassStudentApi } from '@/api/nmt/classstudent'
 import { CourseInfoApi } from '@/api/nmt/courseinfo'
 import { TeachClassApi } from '@/api/nmt/teachclass'
 import { getDictLabel, DICT_TYPE } from "@/utils/dict"
-import ImportForm from "@/views/nmt/coursedetail/classstudent/ImportForm.vue";
+const validateUrl =
+    import.meta.env.VITE_BASE_URL + import.meta.env.VITE_API_URL + '/nmt/student-achievement/validate-import'
 
 const scoreTable = ref()
 const loading = ref(false)
@@ -145,7 +156,7 @@ const applyMerge = () => {
  */
 const importFormRef = ref()
 const handleImport = () => {
-  importFormRef.value.open(classId)
+  importFormRef.value.open({classId,courseId})
 }
 
 /**

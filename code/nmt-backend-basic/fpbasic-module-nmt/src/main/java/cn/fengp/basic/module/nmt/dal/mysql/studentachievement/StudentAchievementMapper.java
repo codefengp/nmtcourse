@@ -30,4 +30,5 @@ public interface StudentAchievementMapper extends BaseMapperX<StudentAchievement
     }
 
     List<StudentAchievementDO> listStudentAchievement(@Param("classId") Long classId);
+    List<StudentAchievementPlanDO> listStudentWithAchievement(@Param("classId") Long classId);
 }

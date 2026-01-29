@@ -1,3 +1,4 @@
+<!--
 <template>
   <Dialog v-model="dialogVisible" title="教师导入" width="400">
     <el-upload
@@ -170,3 +171,4 @@ const outFail = async (failData: string,successData: string) => {
 }
 
 </script>
+-->

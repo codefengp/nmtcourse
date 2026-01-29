@@ -8,11 +8,20 @@
         代码生成器暂时只生成 Mapper XML 文件本身，更多推荐 MybatisX 快速开发插件来生成查询。
         文档可见：https://www.iocoder.cn/MyBatis/x-plugins/
      -->
+
     <select id="listStudentAchievement" resultType="cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementDO">
-        select nsa.id,nsa.plan_id,nsa.objective_id,nsa.mode_id,nsa.score,
-               mcs.id as student_id,mcs.name as student_name,mcs.number as student_number
+        select nsa.id,nsa.plan_id,nsa.objective_id,nsa.mode_id,nsa.score,nsa.student_id
         from nmt_student_achievement nsa
         left join nmt_class_student mcs on mcs.id = nsa.student_id
+        where mcs.class_id = #{classId} and nsa.deleted = 0 and mcs.deleted = 0
+        order by mcs.number
+    </select>
+
+    <select id="listStudentWithAchievement" resultType="cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementPlanDO">
+        select nsa.id,nsa.plan_id,nsa.objective_id,nsa.mode_id,nsa.score,
+               mcs.id as student_id,mcs.name as student_name,mcs.number as student_number
+        from nmt_class_student mcs
+        left join nmt_student_achievement nsa on mcs.id = nsa.student_id
         where mcs.class_id = #{classId} and nsa.deleted = 0 and mcs.deleted = 0
         order by mcs.number
     </select>

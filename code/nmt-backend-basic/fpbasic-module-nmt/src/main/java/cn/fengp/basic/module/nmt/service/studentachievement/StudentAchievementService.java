@@ -3,6 +3,8 @@ package cn.fengp.basic.module.nmt.service.studentachievement;
 import java.util.*;
 
 import cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementPlanDO;
+import com.alibaba.fastjson.JSONObject;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.*;
 import cn.fengp.basic.module.nmt.controller.admin.studentachievement.vo.*;
 import cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementDO;
@@ -68,4 +70,6 @@ public interface StudentAchievementService {
      * @return 学生成绩
      */
     List<StudentAchievementDO> listStudentAchievement(Long classId);
+
+    void downloadTemplate(HttpServletResponse response, JSONObject params);
 }
