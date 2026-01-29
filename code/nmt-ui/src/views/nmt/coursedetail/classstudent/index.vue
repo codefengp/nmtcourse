@@ -114,18 +114,17 @@
   <!-- 表单弹窗：添加/修改 -->
   <ClassStudentForm ref="formRef" @success="getList" />
   <!-- 用户导入对话框 -->
-<!--  <ImportForm ref="importFormRef" @success="getList" />-->
-    <ImportDialog
-        ref="importFormRef"
-        title="学生导入"
-        :validate-url="validateUrl"
-        :submit-api="ClassStudentApi.importData"
-        :template-api="ClassStudentApi.importTemplate"
-        template-file-name="学生导入模板.xls"
-        :fail-export-api="ClassStudentApi.outFail"
-        fail-export-file-name="学生导入错误信息.xls"
-        @success="getList"
-    />
+  <ImportDialog
+      ref="importFormRef"
+      title="学生导入"
+      :validate-url="validateUrl"
+      :submit-api="ClassStudentApi.importExcelData"
+      :template-api="ClassStudentApi.downloadTemplate"
+      template-file-name="学生导入模板.xls"
+      :fail-export-api="ClassStudentApi.outFail"
+      fail-export-file-name="学生导入错误信息.xls"
+      @success="getList"
+  />
 </template>
 
 <script setup lang="ts">
@@ -133,9 +132,8 @@ import { isEmpty } from '@/utils/is'
 import download from '@/utils/download'
 import { ClassStudentApi, ClassStudent } from '@/api/nmt/classstudent'
 import ClassStudentForm from './ClassStudentForm.vue'
-import ImportForm from './ImportForm.vue'
 const validateUrl =
-    import.meta.env.VITE_BASE_URL + import.meta.env.VITE_API_URL + '/nmt/class-student/import-validate'
+    import.meta.env.VITE_BASE_URL + import.meta.env.VITE_API_URL + '/nmt/class-student/validate-import'
 
 /** 班级学生 列表 */
 defineOptions({ name: 'ClassStudent' })
@@ -235,7 +233,7 @@ const handleExport = async () => {
 /** 教师导入 */
 const importFormRef = ref()
 const handleImport = () => {
-    importFormRef.value.open(classId)
+    importFormRef.value.open({classId})
 }
 
 /** 初始化 **/

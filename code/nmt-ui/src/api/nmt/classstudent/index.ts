@@ -52,8 +52,8 @@ export const ClassStudentApi = {
   },
 
   // 下载导入模板
-  importTemplate : async (data) => {
-      return await request.downloadFile({ url: '/nmt/class-student/get-import-template' ,data})
+  downloadTemplate : async (data: string) => {
+      return await request.downloadFile({ url: '/nmt/class-student/download-template' ,data})
   },
 
   // 导出错误
@@ -62,7 +62,7 @@ export const ClassStudentApi = {
   },
 
   // 导入数据
-  importData : async (data:any) => {
-      return await request.post({ url: `/nmt/class-student/import`, data })
+  importExcelData : async (data: string) => {
+      return await request.post({ url: `/nmt/class-student/import-excel-data`, data })
   }
 }

@@ -5,8 +5,8 @@
                 v-model:file-list="fileList"
                 :action="validateUrl"
                 :auto-upload="false"
-                :disabled="validateLoading"
                 :headers="uploadHeaders"
+                :data="{ bodyParams: JSON.stringify(buildBodyParams()) }"
                 :limit="1"
                 :on-error="submitFormError"
                 :on-exceed="handleExceed"
@@ -24,6 +24,7 @@
           <span style="font-size: 16px">
             仅允许导入 xls、xlsx 格式文件。
           </span>
+
                     <el-link
                             v-if="templateApi"
                             :underline="false"
@@ -50,6 +51,7 @@
                     >
             验证成功：{{ successData.length }} 条，
             验证失败：{{ failData.length }} 条
+
             <el-link
                     v-if="failExportApi"
                     :underline="false"
@@ -68,6 +70,7 @@
             <el-button type="warning" @click="validateForm">
                 验证数据
             </el-button>
+
             <el-button
                     type="primary"
                     :disabled="submitLoading"
@@ -75,6 +78,7 @@
             >
                 确认导入
             </el-button>
+
             <el-button @click="dialogVisible = false">
                 取 消
             </el-button>
@@ -94,10 +98,10 @@ const props = defineProps<{
     validateUrl: string
     submitApi: (data: any) => Promise<any>
 
-    templateApi?: () => Promise<any>
+    templateApi?: (data: any) => Promise<any>
     templateFileName?: string
 
-    failExportApi?: (params: any) => Promise<any>
+    failExportApi?: (data: any) => Promise<any>
     failExportFileName?: string
 }>()
 
@@ -123,9 +127,28 @@ const extraParams = ref<any>(null)
 let successData: any[] = []
 let failData: any[] = []
 
+/* ======================= 核心：统一参数结构 ======================= */
+/**
+ * 后端统一接收：
+ * {
+ *   bizParams: {
+ *     params,
+ *     successData,
+ *     failData
+ *   }
+ * }
+ */
+const buildBodyParams = () => {
+    return JSON.stringify({
+            bizParams: extraParams.value,
+            successData,
+            failData
+        })
+}
+
 /* ======================= Methods ======================= */
 
-/** 打开弹窗（暴露给父组件） */
+/** 打开弹窗 */
 const open = (params?: any) => {
     dialogVisible.value = true
     fileList.value = []
@@ -173,13 +196,24 @@ const submitForm = async () => {
         return
     }
 
-    await props.submitApi({
-        params: extraParams.value,
-        successData
-    })
+    await props.submitApi(buildBodyParams())
 
     dialogVisible.value = false
     emits('success')
+}
+
+/** 下载模板 */
+const importTemplate = async () => {
+    if (!props.templateApi) return
+    const res = await props.templateApi(buildBodyParams())
+    download.excel(res, props.templateFileName || '导入模板.xls')
+}
+
+/** 导出错误 */
+const outFail = async () => {
+    if (!props.failExportApi) return
+    const res = await props.failExportApi(buildBodyParams())
+    download.excel(res, props.failExportFileName || '导入错误信息.xls')
 }
 
 /** 上传失败 */
@@ -201,28 +235,5 @@ const resetForm = async () => {
     submitLoading.value = true
     await nextTick()
     uploadRef.value?.clearFiles()
-}
-
-/** 下载模板 */
-const importTemplate = async () => {
-    if (!props.templateApi) return
-    const res = await props.templateApi()
-    download.excel(
-        res,
-        props.templateFileName || '导入模板.xls'
-    )
-}
-
-/** 导出错误信息 */
-const outFail = async () => {
-    if (!props.failExportApi) return
-    const res = await props.failExportApi({
-        failData,
-        successData
-    })
-    download.excel(
-        res,
-        props.failExportFileName || '导入错误信息.xls'
-    )
 }
 </script>

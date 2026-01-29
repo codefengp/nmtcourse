@@ -11,24 +11,33 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public abstract class AbstractImportController<T> {
 
-    /** 下载模板 */
+    /**
+     * 下载模板
+     */
     public abstract void downloadTemplate(HttpServletResponse response, String bodyParams) throws Exception;
 
-    /** 验证导入 */
+    /**
+     * 验证导入
+     */
     public abstract CommonResult<JSONObject> validateImport(MultipartFile file, String bodyParams) throws Exception;
 
-    /** 导出错误 */
+    /**
+     * 导出错误
+     */
     public abstract void outFail(HttpServletResponse response, String bodyParams) throws Exception;
 
-    /** 导入数据 */
-    public abstract CommonResult<Boolean> importExcel(String bodyParams) throws Exception;
+    /**
+     * 导入数据
+     */
+    public abstract CommonResult<Boolean> importExcelData(String bodyParams) throws Exception;
 
-    /** 公共解析前端参数方法 */
-    protected JSONObject parseBizParams(String bodyParams) {
-        if (bodyParams == null || bodyParams.isEmpty()) return new JSONObject();
+    /**
+     * 公共解析前端参数方法
+     */
+    protected JSONObject parseBodyParams(String bodyParams) {
+        if (bodyParams == null || bodyParams.isEmpty())
+            return new JSONObject();
         JSONObject params = JSONObject.parseObject(bodyParams);
-        if (params == null) return new JSONObject();
-        JSONObject bizParams = params.getJSONObject("bizParams");
-        return bizParams != null ? bizParams : new JSONObject();
+        return params == null ? new JSONObject() : params;
     }
 }

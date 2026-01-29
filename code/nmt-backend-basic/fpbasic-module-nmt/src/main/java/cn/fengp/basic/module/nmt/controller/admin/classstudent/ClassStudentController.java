@@ -7,6 +7,7 @@ import cn.fengp.basic.module.nmt.util.ExcelExtUtils;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.swagger.v3.oas.annotations.Parameters;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Resource;
@@ -19,7 +20,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.*;
 import jakarta.servlet.http.*;
 import java.util.*;
-import java.io.IOException;
 
 import cn.fengp.basic.framework.common.pojo.PageResult;
 import cn.fengp.basic.framework.common.pojo.CommonResult;
@@ -113,24 +113,24 @@ public class ClassStudentController extends AbstractImportController<ClassStuden
                         BeanUtils.toBean(list, ClassStudentRespVO.class));
     }*/
 
-    @PostMapping("/get-import-template")
+    @PostMapping("/download-template")
     @Operation(summary = "获得导入模板")
     @PreAuthorize("@ss.hasPermission('nmt:class-student:create')")
     @Override
-    public void downloadTemplate(HttpServletResponse response, String bodyParams) throws Exception {
+    public void downloadTemplate(HttpServletResponse response, @RequestBody String bodyParams) throws Exception {
         //解析参数
-        JSONObject bizParams = parseBizParams(bodyParams);
+        //JSONObject params = super.parseBodyParams(bodyParams);
         ExcelUtils.write(response, "学生导入模板.xls", "学生列表", ClassStudentImportExcelVO.class, new ArrayList<>());
     }
 
-    @PostMapping("/import-validate")
+    @PostMapping("/validate-import")
     @Operation(summary = "验证导入")
     @Parameters({@Parameter(name = "file", description = "Excel 文件", required = true)})
     @PreAuthorize("@ss.hasPermission('nmt:class-student:create')")
     @Override
-    public CommonResult<JSONObject> validateImport(@RequestParam("file") MultipartFile file,@RequestParam(value = "bodyParams", required = false) String bodyParams) throws Exception {
+    public CommonResult<JSONObject> validateImport(@RequestParam("file") MultipartFile file,@RequestParam(value = "bodyParams") String bodyParams) throws Exception {
         //解析参数
-        JSONObject bizParams = parseBizParams(bodyParams);
+        //JSONObject params = super.parseBodyParams(bodyParams);
         List<ClassStudentImportExcelVO> list = ExcelUtils.read(file, ClassStudentImportExcelVO.class);
         return success(classStudentService.validateImport(list));
     }
@@ -139,13 +139,13 @@ public class ClassStudentController extends AbstractImportController<ClassStuden
     @Operation(summary = "导出错误")
     @PreAuthorize("@ss.hasPermission('nmt:class-student:create')")
     @Override
-    public void outFail(HttpServletResponse response,@RequestParam(value = "bodyParams", required = false) String bodyParams) throws Exception {
-        JSONObject bizParams = parseBizParams(bodyParams);
+    public void outFail(HttpServletResponse response,@RequestBody String bodyParams) throws Exception {
+        JSONObject params = super.parseBodyParams(bodyParams);
         List<JSONObject> data = new ArrayList<>();
-        String successData = bizParams.getString("successData");
-        String failData = bizParams.getString("failData");
+        JSONArray successData = params.getJSONArray("successData");
+        JSONArray failData = params.getJSONArray("failData");
         //转成List<JSONObject>-错误数据
-        JSONArray.parseArray(failData).forEach(obj -> data.add((JSONObject) obj));
+        failData.forEach(obj -> data.add((JSONObject) obj));
         // 插入提示行
         JSONObject commentRow = new JSONObject();
         commentRow.put("number", "--以下是验证通过的数据，导入前请删除--");
@@ -153,24 +153,28 @@ public class ClassStudentController extends AbstractImportController<ClassStuden
         commentRow.put("isComment", true);
         data.add(commentRow);
         //转成List<JSONObject>-正确数据
-        JSONArray.parseArray(successData).forEach(obj -> data.add((JSONObject) obj));
+        successData.forEach(obj -> data.add((JSONObject) obj));
         ExcelExtUtils.writeWithComment(response, "错误信息.xls", "错误列表", ClassStudentImportExcelVO.class, data);
     }
 
-    @PostMapping("/import")
+    @PostMapping("/import-excel-data")
     @Operation(summary = "导入")
     @PreAuthorize("@ss.hasPermission('nmt:class-student:create')")
     @Override
-    public CommonResult<Boolean> importExcel(@RequestBody String bodyParams) throws Exception {
-        JSONObject bizParams = parseBizParams(bodyParams);
+    public CommonResult<Boolean> importExcelData(@RequestBody String bodyParams) throws Exception {
+        JSONObject params = super.parseBodyParams(bodyParams);
+        JSONObject bizParams = params.getJSONObject("bizParams");
+        if(bizParams == null || !StringUtils.hasText(bizParams.getString("classId"))){
+            throw ServiceExceptionUtil.invalidParamException("班级标识不能为空");
+        }
         String classId = bizParams.getString("classId");
-        String successData = bizParams.getString("successData");
-        if (!StringUtils.hasText(classId) || !StringUtils.hasText(successData)) {
-            throw ServiceExceptionUtil.invalidParamException("参数不能为空");
+        JSONArray successData = params.getJSONArray("successData");
+        if (CollectionUtils.isEmpty(successData)) {
+            throw ServiceExceptionUtil.invalidParamException("导入数据不能为空");
         }
         List<ClassStudentSaveReqVO> data = new ArrayList<>();
         //转成List<JSONObject>
-        JSONArray.parseArray(successData).forEach(obj -> data.add(BeanUtils.toBean(obj,ClassStudentSaveReqVO.class)));
+        successData.forEach(obj -> data.add(BeanUtils.toBean(obj,ClassStudentSaveReqVO.class)));
         classStudentService.importExcel(data,classId);
         return success(true);
     }
