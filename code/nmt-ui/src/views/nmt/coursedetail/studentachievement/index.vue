@@ -29,10 +29,11 @@
       :data="tableData"
       border
       style="width: 100%"
+      height="calc(100vh - 220px)"
       header-cell-class-name="common-header"
       :header-cell-style="handleHeaderStyle"
     >
-      <el-table-column label="考核方式" align="center">
+      <el-table-column label="考核方式" align="center" fixed="left">
         <el-table-column label="考核内容" align="center">
           <el-table-column label="课程目标" align="center">
             <el-table-column label="总分值" align="center">
@@ -57,7 +58,7 @@
         >
           <el-table-column :label="plan.objectiveName" align="center">
             <el-table-column :label="String(plan.score)" align="center">
-              <el-table-column label="" min-width="70" align="center">
+              <el-table-column label="" min-width="80" align="center">
                 <template #default="{ row }">
                   <span class="score-num">{{ row['plan_' + plan.id] }}</span>
                 </template>
@@ -68,17 +69,17 @@
       </el-table-column>
     </el-table>
   </div>
-  <!-- 导入框 -->
+
   <ImportDialog
-      ref="importFormRef"
-      title="成绩导入"
-      :validate-url="validateUrl"
-      :submit-api="StudentAchievementApi.importExcelData"
-      :template-api="StudentAchievementApi.downloadTemplate"
-      template-file-name="`${courseDetail?.name} ${classDetail?.name || '-'} 成绩导入模板.xls`"
-      :fail-export-api="StudentAchievementApi.outFail"
-      fail-export-file-name="`${courseDetail?.name} ${classDetail?.name || '-'} 成绩导入错误信息.xls`"
-      @success="init"
+    ref="importFormRef"
+    title="成绩导入"
+    :validate-url="validateUrl"
+    :submit-api="StudentAchievementApi.importExcelData"
+    :template-api="StudentAchievementApi.downloadTemplate"
+    :template-file-name="courseDetail?.name + '-' + (classDetail?.name || '-') + '-成绩导入模板.xlsx'"
+    :fail-export-api="StudentAchievementApi.outFail"
+    :fail-export-file-name="(courseDetail?.name || '') + '-' + (classDetail?.name || '-') + '-成绩导入错误信息.xlsx'"
+    @success="init"
   />
 </template>
 
@@ -92,8 +93,8 @@ import { ClassStudentApi } from '@/api/nmt/classstudent'
 import { CourseInfoApi } from '@/api/nmt/courseinfo'
 import { TeachClassApi } from '@/api/nmt/teachclass'
 import { getDictLabel, DICT_TYPE } from "@/utils/dict"
-const validateUrl =
-    import.meta.env.VITE_BASE_URL + import.meta.env.VITE_API_URL + '/nmt/student-achievement/validate-import'
+
+const validateUrl = import.meta.env.VITE_BASE_URL + import.meta.env.VITE_API_URL + '/nmt/student-achievement/validate-import'
 
 const scoreTable = ref()
 const loading = ref(false)
@@ -106,9 +107,6 @@ const classDetail = ref<any>({})
 const rawPlans = ref<any[]>([])
 const tableData = ref<any[]>([])
 
-/**
- * 样式控制：总分值数字仅改字体颜色，背景恢复灰色
- */
 const handleHeaderStyle = ({ rowIndex, columnIndex }: any) => {
   const baseStyle = { backgroundColor: '#f5f7fa', color: '#333' }
   if (rowIndex === 3 && columnIndex > 0) {
@@ -117,9 +115,6 @@ const handleHeaderStyle = ({ rowIndex, columnIndex }: any) => {
   return baseStyle
 }
 
-/**
- * 按考核方式分组
- */
 const groupedPlans = computed(() => {
   const groups: any[] = []
   rawPlans.value.forEach(p => {
@@ -133,43 +128,37 @@ const groupedPlans = computed(() => {
   return groups
 })
 
-/**
- * 合并表头说明行 (DOM 操作)
- */
 const applyMerge = () => {
-  const rows = scoreTable.value?.$el.querySelectorAll('.el-table__header tr')
-  if (!rows || rows.length < 5) return
-  const ths = Array.from(rows[4].querySelectorAll('th')) as HTMLElement[]
-  if (ths.length > 1) {
-    ths[1].setAttribute('colspan', (ths.length - 1).toString())
-    ths[1].innerHTML = `
-      <div class="merge-wrapper">
-        <div class="name-box">姓名</div>
-        <div class="remark-box">说明:本表格为在线操作表格，您可直接将学生学号、姓名对应考核内容的成绩复制进表格后点击右上角保存即可!</div>
-      </div>`
-    ths.slice(2).forEach(th => th.style.display = 'none')
-  }
+  const tableEl = scoreTable.value?.$el
+  if (!tableEl) return
+
+  const allHeaders = tableEl.querySelectorAll('.el-table__header')
+  allHeaders.forEach((header: HTMLElement) => {
+    const rows = header.querySelectorAll('tr')
+    if (rows.length < 5) return
+    const ths = Array.from(rows[4].querySelectorAll('th')) as HTMLElement[]
+
+    if (ths.length > 1) {
+      ths[1].setAttribute('colspan', '100')
+      ths[1].innerHTML = `
+        <div class="merge-wrapper">
+          <div class="name-box">姓名</div>
+          <div class="remark-box">说明:点击左上方 导入成绩 按钮，下载模板后，填入学生成绩，若有错误数据，请根据提示信息修改，最后导入成绩数据！</div>
+        </div>`
+      ths.slice(2).forEach(th => th.style.display = 'none')
+    }
+  })
 }
 
-/**
- * 导入按钮点击
- */
 const importFormRef = ref()
 const handleImport = () => {
-  importFormRef.value.open({classId,courseId})
+  importFormRef.value.open({classId, courseId})
 }
 
-/**
- * 导出按钮点击
- */
 const handleExport = () => {
   console.log('执行导出逻辑')
-  // 此处可调用后端 export 接口
 }
 
-/**
- * 初始化数据
- */
 const init = async () => {
   loading.value = true
   try {
@@ -194,7 +183,9 @@ const init = async () => {
       return row
     })
 
-    nextTick(applyMerge)
+    nextTick(() => {
+      setTimeout(applyMerge, 150)
+    })
   } catch (error) {
     console.error('加载失败', error)
   } finally {
@@ -212,14 +203,13 @@ onMounted(init)
   position: relative;
 }
 
-/* 右上角按钮组 */
 .operation-wrapper {
   position: absolute;
   top: 20px;
   right: 20px;
   display: flex;
   gap: 12px;
-  z-index: 10;
+  z-index: 20;
 }
 
 .ml-5 { margin-left: 5px; }
@@ -245,12 +235,13 @@ onMounted(init)
 
 :deep(.common-header) { font-weight: bold !important; }
 
-/* 合并说明行样式 */
+/* 合并行样式修正 */
 :deep(.merge-wrapper) {
   display: flex;
   align-items: center;
   height: 44px;
-  width: 100%;
+  /* 确保在固定列模式下也有足够的展示空间 */
+  min-width: 1000px;
 }
 
 :deep(.name-box) {
@@ -261,14 +252,17 @@ onMounted(init)
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  background-color: #f5f7fa;
 }
 
 :deep(.remark-box) {
   flex: 1;
-  text-align: center;
-  color: rgba(0, 0, 0, 0.98);
+  padding: 0 20px;
+  text-align: center; /* 恢复居中 */
+  color: rgba(0, 0, 0, 0.98); /* 恢复原来的灰色 */
   font-weight: normal;
-  font-size: 14px;
+  font-size: 14px !important;
+  white-space: nowrap;
 }
 
 :deep(.el-table__header tr:nth-child(5) th) { padding: 0 !important; }

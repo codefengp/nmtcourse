@@ -6,7 +6,7 @@
                 :action="validateUrl"
                 :auto-upload="false"
                 :headers="uploadHeaders"
-                :data="{ bodyParams: JSON.stringify(buildBodyParams()) }"
+                :data="{ bodyParams: buildBodyParams() }"
                 :limit="1"
                 :on-error="submitFormError"
                 :on-exceed="handleExceed"

@@ -120,9 +120,9 @@
       :validate-url="validateUrl"
       :submit-api="ClassStudentApi.importExcelData"
       :template-api="ClassStudentApi.downloadTemplate"
-      template-file-name="学生导入模板.xls"
+      template-file-name="学生导入模板.xlsx"
       :fail-export-api="ClassStudentApi.outFail"
-      fail-export-file-name="学生导入错误信息.xls"
+      fail-export-file-name="学生导入错误信息.xlsx"
       @success="getList"
   />
 </template>
