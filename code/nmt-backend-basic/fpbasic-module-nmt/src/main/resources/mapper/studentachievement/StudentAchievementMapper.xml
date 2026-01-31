@@ -22,7 +22,7 @@
                mcs.id as student_id,mcs.name as student_name,mcs.number as student_number
         from nmt_class_student mcs
         left join nmt_student_achievement nsa on mcs.id = nsa.student_id
-        where mcs.class_id = #{classId} and nsa.deleted = 0 and mcs.deleted = 0
+        where mcs.class_id = #{classId} and mcs.deleted = 0
         order by mcs.number
     </select>
 </mapper>

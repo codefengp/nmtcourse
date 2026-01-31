@@ -15,6 +15,7 @@ import cn.fengp.basic.module.nmt.service.studentachievement.StudentAchievementSe
 import com.alibaba.fastjson.JSONObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
@@ -112,7 +113,7 @@ public class StudentAchievementController extends AbstractImportController {
 
     @PostMapping("/download-template")
     @Operation(summary = "获得导入模板")
-    @PreAuthorize("@ss.hasPermission('nmt:class-achievement:create')")
+    @PreAuthorize("@ss.hasPermission('nmt:student-achievement:create')")
     @Override
     public void downloadTemplate(HttpServletResponse response, @RequestBody String bodyParams) throws Exception {
         //解析参数
@@ -120,18 +121,32 @@ public class StudentAchievementController extends AbstractImportController {
         studentAchievementService.downloadTemplate(response, params);
     }
 
+    @PostMapping("/validate-import")
+    @Operation(summary = "验证导入")
+    @PreAuthorize("@ss.hasPermission('nmt:student-achievement:create')")
     @Override
-    public CommonResult<JSONObject> validateImport(MultipartFile file, String bodyParams) throws Exception {
-        return null;
+    public CommonResult<JSONObject> validateImport(@RequestParam(name = "file") MultipartFile file,@RequestParam(value = "bodyParams") String bodyParams) throws Exception {
+        //解析参数
+        JSONObject params = super.parseBodyParams(bodyParams);
+        return success(studentAchievementService.validateImport(file, params));
     }
 
+    @PostMapping("/out-fail")
+    @Operation(summary = "导出错误")
+    @PreAuthorize("@ss.hasPermission('nmt:student-achievement:create')")
     @Override
-    public void outFail(HttpServletResponse response, String bodyParams) throws Exception {
-
+    public void outFail(HttpServletResponse response,@RequestBody String bodyParams) throws Exception {
+        JSONObject params = super.parseBodyParams(bodyParams);
+        studentAchievementService.outFail(response,params);
     }
 
+    @PostMapping("/import-excel-data")
+    @Operation(summary = "导入")
+    @PreAuthorize("@ss.hasPermission('nmt:student-achievement:create')")
     @Override
-    public CommonResult<Boolean> importExcelData(String bodyParams) throws Exception {
-        return null;
+    public CommonResult<Boolean> importExcelData(@RequestBody String bodyParams) throws Exception {
+        JSONObject params = super.parseBodyParams(bodyParams);
+        studentAchievementService.importExcel(params);
+        return success(true);
     }
 }

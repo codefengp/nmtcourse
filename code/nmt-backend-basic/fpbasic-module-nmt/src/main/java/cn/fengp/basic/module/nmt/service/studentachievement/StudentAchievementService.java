@@ -1,7 +1,9 @@
 package cn.fengp.basic.module.nmt.service.studentachievement;
 
+import java.io.IOException;
 import java.util.*;
 
+import cn.fengp.basic.framework.common.pojo.CommonResult;
 import cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementPlanDO;
 import com.alibaba.fastjson.JSONObject;
 import jakarta.servlet.http.HttpServletResponse;
@@ -10,6 +12,7 @@ import cn.fengp.basic.module.nmt.controller.admin.studentachievement.vo.*;
 import cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementDO;
 import cn.fengp.basic.framework.common.pojo.PageResult;
 import cn.fengp.basic.framework.common.pojo.PageParam;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 学生成绩 Service 接口
@@ -71,5 +74,11 @@ public interface StudentAchievementService {
      */
     List<StudentAchievementDO> listStudentAchievement(Long classId);
 
-    void downloadTemplate(HttpServletResponse response, JSONObject params);
+    void downloadTemplate(HttpServletResponse response, JSONObject params) throws IOException;
+
+    JSONObject validateImport(MultipartFile file, JSONObject params) throws IOException;
+
+    void outFail(HttpServletResponse response, JSONObject params) throws IOException;
+
+    void importExcel(JSONObject params);
 }

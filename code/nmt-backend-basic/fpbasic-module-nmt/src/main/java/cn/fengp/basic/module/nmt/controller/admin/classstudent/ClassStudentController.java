@@ -125,10 +125,9 @@ public class ClassStudentController extends AbstractImportController<ClassStuden
 
     @PostMapping("/validate-import")
     @Operation(summary = "验证导入")
-    @Parameters({@Parameter(name = "file", description = "Excel 文件", required = true)})
     @PreAuthorize("@ss.hasPermission('nmt:class-student:create')")
     @Override
-    public CommonResult<JSONObject> validateImport(@RequestParam("file") MultipartFile file,@RequestParam(value = "bodyParams") String bodyParams) throws Exception {
+    public CommonResult<JSONObject> validateImport(@RequestParam(name = "file") MultipartFile file,@RequestParam(value = "bodyParams") String bodyParams) throws Exception {
         //解析参数
         //JSONObject params = super.parseBodyParams(bodyParams);
         List<ClassStudentImportExcelVO> list = ExcelUtils.read(file, ClassStudentImportExcelVO.class);
@@ -141,20 +140,7 @@ public class ClassStudentController extends AbstractImportController<ClassStuden
     @Override
     public void outFail(HttpServletResponse response,@RequestBody String bodyParams) throws Exception {
         JSONObject params = super.parseBodyParams(bodyParams);
-        List<JSONObject> data = new ArrayList<>();
-        JSONArray successData = params.getJSONArray("successData");
-        JSONArray failData = params.getJSONArray("failData");
-        //转成List<JSONObject>-错误数据
-        failData.forEach(obj -> data.add((JSONObject) obj));
-        // 插入提示行
-        JSONObject commentRow = new JSONObject();
-        commentRow.put("number", "--以下是验证通过的数据，导入前请删除--");
-        commentRow.put("name", "");
-        commentRow.put("isComment", true);
-        data.add(commentRow);
-        //转成List<JSONObject>-正确数据
-        successData.forEach(obj -> data.add((JSONObject) obj));
-        ExcelExtUtils.writeWithComment(response, "错误信息.xls", "错误列表", ClassStudentImportExcelVO.class, data);
+        classStudentService.outFail(response,params);
     }
 
     @PostMapping("/import-excel-data")
@@ -163,19 +149,7 @@ public class ClassStudentController extends AbstractImportController<ClassStuden
     @Override
     public CommonResult<Boolean> importExcelData(@RequestBody String bodyParams) throws Exception {
         JSONObject params = super.parseBodyParams(bodyParams);
-        JSONObject bizParams = params.getJSONObject("bizParams");
-        if(bizParams == null || !StringUtils.hasText(bizParams.getString("classId"))){
-            throw ServiceExceptionUtil.invalidParamException("班级标识不能为空");
-        }
-        String classId = bizParams.getString("classId");
-        JSONArray successData = params.getJSONArray("successData");
-        if (CollectionUtils.isEmpty(successData)) {
-            throw ServiceExceptionUtil.invalidParamException("导入数据不能为空");
-        }
-        List<ClassStudentSaveReqVO> data = new ArrayList<>();
-        //转成List<JSONObject>
-        successData.forEach(obj -> data.add(BeanUtils.toBean(obj,ClassStudentSaveReqVO.class)));
-        classStudentService.importExcel(data,classId);
+        classStudentService.importExcel(params);
         return success(true);
     }
 

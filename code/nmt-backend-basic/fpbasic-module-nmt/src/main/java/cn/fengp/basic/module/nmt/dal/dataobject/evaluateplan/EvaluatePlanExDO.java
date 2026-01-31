@@ -1,9 +1,6 @@
 package cn.fengp.basic.module.nmt.dal.dataobject.evaluateplan;
 
-import cn.fengp.basic.framework.mybatis.core.dataobject.BaseDO;
-import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

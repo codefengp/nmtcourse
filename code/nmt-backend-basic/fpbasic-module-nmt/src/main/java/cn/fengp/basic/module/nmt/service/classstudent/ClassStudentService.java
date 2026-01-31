@@ -1,9 +1,11 @@
 package cn.fengp.basic.module.nmt.service.classstudent;
 
+import java.io.IOException;
 import java.util.*;
 
 import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentExDO;
 import com.alibaba.fastjson.JSONObject;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.*;
 import cn.fengp.basic.module.nmt.controller.admin.classstudent.vo.*;
 import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentDO;
@@ -70,10 +72,11 @@ public interface ClassStudentService {
 
     /**
      * 导入数据
-     * @param list
      * @return
      */
-    void importExcel(List<ClassStudentSaveReqVO> list,String classId);
+    void importExcel(JSONObject params);
 
     List<ClassStudentDO> listClassStudent(Long classId);
+
+    void outFail(HttpServletResponse response, JSONObject params) throws IOException;
 }

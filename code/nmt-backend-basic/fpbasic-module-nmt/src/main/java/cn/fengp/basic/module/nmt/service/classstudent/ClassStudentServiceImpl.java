@@ -8,19 +8,24 @@ import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentExDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.teachclass.TeachClassDO;
 import cn.fengp.basic.module.nmt.dal.mysql.teachclass.TeachClassMapper;
 import cn.fengp.basic.module.nmt.service.teachclass.TeachClassService;
+import cn.fengp.basic.module.nmt.util.ExcelExtUtils;
 import cn.hutool.core.collection.CollUtil;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.common.annotations.VisibleForTesting;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -143,7 +148,26 @@ public class ClassStudentServiceImpl implements ClassStudentService {
     @Override
     public List<ClassStudentDO> listClassStudent(Long classId) {
         return classStudentMapper.selectList(new LambdaQueryWrapperX<ClassStudentDO>()
-                .eq(ClassStudentDO::getClassId, classId));
+                .eq(ClassStudentDO::getClassId, classId).orderByAsc(ClassStudentDO::getNumber));
+    }
+
+    @Override
+    public void outFail(HttpServletResponse response, JSONObject params) throws IOException {
+        List<JSONObject> data = new ArrayList<>();
+        JSONArray successData = params.getJSONArray("successData");
+        JSONArray failData = params.getJSONArray("failData");
+        //转成List<JSONObject>-错误数据
+        failData.forEach(obj -> data.add((JSONObject) obj));
+        // 插入提示行
+        JSONObject commentRow = new JSONObject();
+        commentRow.put("number", "--错误数据分割行，下方是验证通过的数据行--");
+        commentRow.put("name", "");
+        commentRow.put("isComment", true);
+        data.add(commentRow);
+        //转成List<JSONObject>-正确数据
+        successData.forEach(obj -> data.add((JSONObject) obj));
+        ExcelExtUtils.writeWithComment(response, "错误信息.xls", "错误列表", ClassStudentImportExcelVO.class, data);
+
     }
 
     @Override
@@ -191,8 +215,20 @@ public class ClassStudentServiceImpl implements ClassStudentService {
     }
 
     @Override
-    public void importExcel(List<ClassStudentSaveReqVO> list,String classId) {
-        List<ClassStudentDO> studentDOS = list.stream()
+    public void importExcel(JSONObject params) {
+        JSONObject bizParams = params.getJSONObject("bizParams");
+        if(bizParams == null || !StringUtils.hasText(bizParams.getString("classId"))){
+            throw ServiceExceptionUtil.invalidParamException("班级标识不能为空");
+        }
+        String classId = bizParams.getString("classId");
+        JSONArray successData = params.getJSONArray("successData");
+        if (CollectionUtils.isEmpty(successData)) {
+            throw ServiceExceptionUtil.invalidParamException("导入数据不能为空");
+        }
+        List<ClassStudentSaveReqVO> data = new ArrayList<>();
+        //转成List<JSONObject>
+        successData.forEach(obj -> data.add(BeanUtils.toBean(obj,ClassStudentSaveReqVO.class)));
+        List<ClassStudentDO> studentDOS = successData.stream()
                 .map(stu -> {
                     ClassStudentDO dto = BeanUtils.toBean(stu, ClassStudentDO.class);
                     dto.setClassId(Long.parseLong(classId));
