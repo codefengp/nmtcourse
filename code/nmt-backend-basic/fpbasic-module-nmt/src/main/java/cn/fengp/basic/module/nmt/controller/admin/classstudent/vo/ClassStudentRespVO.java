@@ -11,7 +11,7 @@ import cn.idev.excel.annotation.*;
 public class ClassStudentRespVO {
 
     @Schema(description = "主键", requiredMode = Schema.RequiredMode.REQUIRED, example = "21273")
-    @ExcelProperty("主键")
+    @ExcelIgnore
     private Long id;
 
     @Schema(description = "学生姓名", requiredMode = Schema.RequiredMode.REQUIRED, example = "张三")
@@ -23,7 +23,7 @@ public class ClassStudentRespVO {
     private String number;
 
     @Schema(description = "所属班级ID", requiredMode = Schema.RequiredMode.REQUIRED, example = "7044")
-    @ExcelProperty("所属班级ID")
+    @ExcelIgnore
     private Long classId;
 
-}
+}

@@ -43,8 +43,8 @@ export const StudentAchievementApi = {
   },
 
   // 导出学生成绩 Excel
-  exportStudentAchievement: async (params) => {
-    return await request.download({ url: `/nmt/student-achievement/export-excel`, params })
+  exportExcelData: async (data: string) => {
+    return await request.downloadFile({ url: `/nmt/student-achievement/export-excel-data`, data })
   },
 
   // 查询学生成绩详情

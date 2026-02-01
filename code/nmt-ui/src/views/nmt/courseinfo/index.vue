@@ -159,7 +159,6 @@
         @selection-change="handleRowCheckboxChange"
     >
     <el-table-column type="selection" width="55" />
-      <el-table-column label="主键ID" align="center" prop="id" />
       <el-table-column label="编号" align="center" prop="number" />
       <el-table-column label="名称" align="center" prop="name" />
       <el-table-column label="所属专业" align="center" prop="majorType">
@@ -202,8 +201,10 @@
           <el-dropdown
             @command="(command) => handleCommand(command, scope.row)"
             v-hasPermi="[
-                    'nmt:course-info:update',
-                    'nmt:course-info:update',
+                    'nmt:course-info:query',
+                    'nmt:course-info:query',
+                    'nmt:course-info:query',
+                    'nmt:course-info:query',
                     'nmt:course-info:delete'
                   ]"
           >
@@ -212,13 +213,13 @@
               <el-dropdown-menu>
                 <el-dropdown-item
                   command="courseOutline"
-                  v-if="checkPermi(['nmt:course-info:update'])"
+                  v-if="checkPermi(['nmt:course-info:query'])"
                 >
                   <Icon icon="ep:grid" />课程大纲
                 </el-dropdown-item>
                 <el-dropdown-item
                         command="evaluatePlan"
-                        v-if="checkPermi(['nmt:course-info:update'])"
+                        v-if="checkPermi(['nmt:course-info:query'])"
                 >
                     <Icon icon="ep:document" />考核计划
                 </el-dropdown-item>
@@ -227,6 +228,12 @@
                   v-if="checkPermi(['nmt:course-info:query'])"
                 >
                   <Icon icon="ep:avatar" />班级成绩
+                </el-dropdown-item>
+                <el-dropdown-item
+                    command="achievementEvaluation"
+                    v-if="checkPermi(['nmt:course-info:query'])"
+                >
+                  <Icon icon="ep:histogram" />达成评价
                 </el-dropdown-item>
                 <el-dropdown-item
                   command="handleDelete"
@@ -377,8 +384,11 @@ const handleCommand = (command: string, row: CourseInfo) => {
             evaluatePlan(row.id)
             break
         case 'teachClass':
-          teachClass(row.id)
-          break
+            teachClass(row.id)
+            break
+        case 'achievementEvaluation':
+            achievementEvaluation(row.id)
+            break
         default:
             break
     }
@@ -406,6 +416,14 @@ const evaluatePlan = (id: number) => {
 const teachClass = (id: number) => {
   // 跳转页面并设置请求参数，使用 `query` 属性
   push('/course/course-detail/teach-class?id=' + id)
+}
+
+/**
+ * 达成评价
+ */
+const achievementEvaluation = (id: number) => {
+  // 跳转页面并设置请求参数，使用 `query` 属性
+  push('/course/course-detail/achievement-evaluation?id=' + id)
 }
 
 /** 初始化 **/

@@ -32,6 +32,11 @@ public abstract class AbstractImportController<T> {
     public abstract CommonResult<Boolean> importExcelData(String bodyParams) throws Exception;
 
     /**
+     * 导出数据
+     */
+    public abstract void exportExcelData(HttpServletResponse response, String bodyParams) throws Exception;
+
+    /**
      * 公共解析前端参数方法
      */
     protected JSONObject parseBodyParams(String bodyParams) {

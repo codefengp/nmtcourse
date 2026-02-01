@@ -125,3 +125,33 @@ CREATE TABLE `nmt_student_achievement` (
    deleted BIT(1) DEFAULT b'0' COMMENT '是否删除'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学生成绩';
 
+--创建达成度评价表
+CREATE TABLE `nmt_achievement_evaluation` (
+  `id` bigint PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+  `course_id` bigint NOT NULL COMMENT '课程ID',
+  `class_id` bigint NOT NULL COMMENT '教学班级ID',
+  `overall_comment` text COMMENT '学生总体评价',
+  `problem_analysis` text COMMENT '存在问题',
+  `improvement_plan` text COMMENT '课程改进',
+   creator VARCHAR(64) DEFAULT '' COMMENT '创建者',
+   create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+   updater VARCHAR(64) DEFAULT '' COMMENT '更新者',
+   update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+   deleted BIT(1) DEFAULT b'0' COMMENT '是否删除'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='达成度评价表';
+
+--创建课程目标达成度评价表
+CREATE TABLE `nmt_objective_evaluation` (
+  `id` bigint PRIMARY KEY AUTO_INCREMENT COMMENT '主键',
+  `evaluation_id` bigint NOT NULL COMMENT '课程评价主表ID',
+  `objective_id` bigint NOT NULL COMMENT '课程目标ID',
+  `objective_name` varchar(255) DEFAULT NULL COMMENT '目标名称',
+  `objective_content` varchar(1000) DEFAULT NULL COMMENT '目标内容',
+  `comment` text COMMENT '评价内容',
+   creator VARCHAR(64) DEFAULT '' COMMENT '创建者',
+   create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+   updater VARCHAR(64) DEFAULT '' COMMENT '更新者',
+   update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+   deleted BIT(1) DEFAULT b'0' COMMENT '是否删除'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='课程目标达成度评价表';
+

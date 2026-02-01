@@ -16,4 +16,6 @@ public interface ErrorCodeConstants {
     ErrorCode CLASS_STUDENT_NUMBER_EXISTS = new ErrorCode(1_010_000_009, "学号已存在");
     ErrorCode CLASS_STUDENT_TABlE_NUMBER_EXISTS = new ErrorCode(1_010_000_010, "Excel文件中学号重复");
     ErrorCode STUDENT_ACHIEVEMENT_NOT_EXISTS = new ErrorCode(1_010_000_011, "学生成绩不存在");
+    ErrorCode ACHIEVEMENT_EVALUATION_NOT_EXISTS = new ErrorCode(1_010_000_012, "达成度评价不存在");
+    ErrorCode OBJECTIVE_EVALUATION_NOT_EXISTS = new ErrorCode(1_010_000_012, "课程目标达成度评价不存在");
 }

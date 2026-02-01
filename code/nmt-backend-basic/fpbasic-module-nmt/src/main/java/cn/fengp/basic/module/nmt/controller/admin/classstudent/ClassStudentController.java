@@ -1,6 +1,8 @@
 package cn.fengp.basic.module.nmt.controller.admin.classstudent;
 
+import cn.fengp.basic.framework.apilog.core.annotation.ApiAccessLog;
 import cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil;
+import cn.fengp.basic.framework.common.pojo.PageParam;
 import cn.fengp.basic.module.nmt.controller.admin.common.AbstractImportController;
 import cn.fengp.basic.module.nmt.dal.dataobject.classstudent.ClassStudentExDO;
 import cn.fengp.basic.module.nmt.util.ExcelExtUtils;
@@ -19,11 +21,15 @@ import io.swagger.v3.oas.annotations.Operation;
 
 import jakarta.validation.*;
 import jakarta.servlet.http.*;
+
+import java.io.IOException;
 import java.util.*;
 
 import cn.fengp.basic.framework.common.pojo.PageResult;
 import cn.fengp.basic.framework.common.pojo.CommonResult;
 import cn.fengp.basic.framework.common.util.object.BeanUtils;
+
+import static cn.fengp.basic.framework.apilog.core.enums.OperateTypeEnum.EXPORT;
 import static cn.fengp.basic.framework.common.pojo.CommonResult.success;
 
 import cn.fengp.basic.framework.excel.core.util.ExcelUtils;
@@ -100,18 +106,18 @@ public class ClassStudentController extends AbstractImportController<ClassStuden
         return success(BeanUtils.toBean(students, ClassStudentRespVO.class));
     }
 
-/*    @GetMapping("/export-excel")
+    @GetMapping("/export-excel")
     @Operation(summary = "导出班级学生 Excel")
     @PreAuthorize("@ss.hasPermission('nmt:class-student:export')")
     @ApiAccessLog(operateType = EXPORT)
     public void exportClassStudentExcel(@Valid ClassStudentPageReqVO pageReqVO,
               HttpServletResponse response) throws IOException {
         pageReqVO.setPageSize(PageParam.PAGE_SIZE_NONE);
-        List<ClassStudentDO> list = classStudentService.getClassStudentPage(pageReqVO).getList();
+        List<ClassStudentExDO> list = classStudentService.getClassStudentPage(pageReqVO).getList();
         // 导出 Excel
-        ExcelUtils.write(response, "班级学生.xls", "数据", ClassStudentRespVO.class,
-                        BeanUtils.toBean(list, ClassStudentRespVO.class));
-    }*/
+        ExcelUtils.write(response, "班级学生.xls", "数据", ClassStudentRespExVO.class,
+                        BeanUtils.toBean(list, ClassStudentRespExVO.class));
+    }
 
     @PostMapping("/download-template")
     @Operation(summary = "获得导入模板")
@@ -151,6 +157,11 @@ public class ClassStudentController extends AbstractImportController<ClassStuden
         JSONObject params = super.parseBodyParams(bodyParams);
         classStudentService.importExcel(params);
         return success(true);
+    }
+
+    @Override
+    public void exportExcelData(HttpServletResponse response, String bodyParams) throws Exception {
+
     }
 
 }

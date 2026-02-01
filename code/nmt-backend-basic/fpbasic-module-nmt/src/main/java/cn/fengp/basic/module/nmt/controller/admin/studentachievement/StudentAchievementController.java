@@ -149,4 +149,14 @@ public class StudentAchievementController extends AbstractImportController {
         studentAchievementService.importExcel(params);
         return success(true);
     }
+
+    @PostMapping("/export-excel-data")
+    @Operation(summary = "导出数据")
+    @PreAuthorize("@ss.hasPermission('nmt:student-achievement:query')")
+    @Override
+    public void exportExcelData(HttpServletResponse response, @RequestBody String bodyParams) throws Exception {
+        //解析参数
+        JSONObject params = super.parseBodyParams(bodyParams);
+        studentAchievementService.exportExcelData(response, params);
+    }
 }

@@ -335,6 +335,12 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
         studentAchievementMapper.insertOrUpdate(resultList);
     }
 
+    @Override
+    public void exportExcelData(HttpServletResponse response, JSONObject params) throws IOException {
+        //直接调用下载模板
+        this.downloadTemplate(response, params);
+    }
+
     /**
      * 获取导入数据
      * @param file

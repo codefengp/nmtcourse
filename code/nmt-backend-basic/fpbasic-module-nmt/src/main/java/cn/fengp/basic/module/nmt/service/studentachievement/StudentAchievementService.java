@@ -81,4 +81,6 @@ public interface StudentAchievementService {
     void outFail(HttpServletResponse response, JSONObject params) throws IOException;
 
     void importExcel(JSONObject params);
+
+    void exportExcelData(HttpServletResponse response, JSONObject params) throws IOException;
 }
