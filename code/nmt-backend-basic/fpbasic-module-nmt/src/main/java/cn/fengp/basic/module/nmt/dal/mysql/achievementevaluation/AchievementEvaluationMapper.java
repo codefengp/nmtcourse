@@ -6,8 +6,10 @@ import cn.fengp.basic.framework.common.pojo.PageResult;
 import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.fengp.basic.framework.mybatis.core.mapper.BaseMapperX;
 import cn.fengp.basic.module.nmt.dal.dataobject.achievementevaluation.AchievementEvaluationDO;
+import com.alibaba.fastjson.JSONObject;
 import org.apache.ibatis.annotations.Mapper;
 import cn.fengp.basic.module.nmt.controller.admin.achievementevaluation.vo.*;
+import org.apache.ibatis.annotations.Param;
 
 /**
  * 达成度评价 Mapper
@@ -27,4 +29,5 @@ public interface AchievementEvaluationMapper extends BaseMapperX<AchievementEval
                 .orderByDesc(AchievementEvaluationDO::getId));
     }
 
+    List<JSONObject> getStuModeScoreRateList(@Param("courseId") Long courseId,@Param("classId") Long classId);
 }

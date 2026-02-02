@@ -338,12 +338,8 @@ const addMode = async () => {
 
 /** 列表数据 */
 const reloadModeList = async () => {
-  const res = await EvaluateModeApi.getEvaluateModePage({
-    courseId,
-    pageNo: 1,
-    pageSize: 100
-  })
-  modeForm.modes = res.list || []
+  const res = await EvaluateModeApi.listEvaluateMode(courseId)
+  modeForm.modes = res || []
 }
 
 /** 自动保存 */

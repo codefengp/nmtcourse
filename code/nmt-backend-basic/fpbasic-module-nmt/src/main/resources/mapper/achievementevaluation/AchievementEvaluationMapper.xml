@@ -9,4 +9,17 @@
         文档可见：https://www.iocoder.cn/MyBatis/x-plugins/
      -->
 
+    <!--ROUND(SUM(nsa.score) / NULLIF(SUM(nep.score), 0), 4):
+    1.四舍五入保留4位小数
+    2.NULLIF(SUM(nep.score), 0): 如果和0相等结果为null,反之返回sum值 -> (NULLIF(3, 3)  → NULL,两者相等返回null)
+    3.10 / NULL = null   -->
+    <select id="getStuModeScoreRateList" resultType="com.alibaba.fastjson.JSONObject">
+        select ROUND(SUM(nsa.score) / NULLIF(SUM(nep.score), 0), 4) as modeScoreRate,nsa.student_id as studentId,nsa.mode_id as modeId,nom.course_id as courseId
+        from nmt_student_achievement nsa
+                 left join nmt_evaluate_plan nep on nsa.plan_id = nep.id
+                 left join nmt_objective_mode nom on nep.mode_id = nom.mode_id
+                 left join nmt_class_student ncs on nsa.student_id = ncs.id
+        where ncs.class_id = #{classId} and nom.course_id = #{courseId} and nsa.deleted = 0
+        group by nsa.student_id ,nsa.mode_id
+    </select>
 </mapper>

@@ -1,5 +1,4 @@
 import request from '@/config/axios'
-import type { Dayjs } from 'dayjs';
 
 /** 达成度评价信息 */
 export interface AchievementEvaluation {
@@ -47,4 +46,9 @@ export const AchievementEvaluationApi = {
   exportAchievementEvaluation: async (params) => {
     return await request.download({ url: `/nmt/achievement-evaluation/export-excel`, params })
   },
-}
+
+  // 查询课程总评分数详情
+  getCourseOverallScore: async (courseId: number,classId:number) => {
+    return await request.get({ url: `/nmt/achievement-evaluation/get-overall-score?courseId=` + courseId + `&classId=` + classId })
+  },
+}

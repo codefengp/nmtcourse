@@ -1,5 +1,6 @@
 package cn.fengp.basic.module.nmt.controller.admin.achievementevaluation;
 
+import com.alibaba.fastjson.JSONObject;
 import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Resource;
 import org.springframework.validation.annotation.Validated;
@@ -101,4 +102,11 @@ public class AchievementEvaluationController {
                         BeanUtils.toBean(list, AchievementEvaluationRespVO.class));
     }
 
+    @GetMapping("/get-overall-score")
+    @Operation(summary = "获取课程总评分数")
+    @PreAuthorize("@ss.hasPermission('nmt:achievement-evaluation:query')")
+    public CommonResult<JSONObject> getCourseOverallScore(@RequestParam(name = "courseId") Long courseId, @RequestParam(name = "classId") Long classId) {
+        JSONObject overallScore = achievementEvaluationService.getCourseOverallScore(courseId, classId);
+        return success(overallScore);
+    }
 }

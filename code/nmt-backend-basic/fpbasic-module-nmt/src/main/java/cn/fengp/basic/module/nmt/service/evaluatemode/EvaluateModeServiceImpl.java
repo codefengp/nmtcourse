@@ -1,7 +1,9 @@
 package cn.fengp.basic.module.nmt.service.evaluatemode;
 
+import cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil;
 import cn.fengp.basic.framework.common.pojo.PageResult;
 import cn.fengp.basic.framework.common.util.object.BeanUtils;
+import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.fengp.basic.module.nmt.controller.admin.evaluatemode.vo.EvaluateModePageReqVO;
 import cn.fengp.basic.module.nmt.controller.admin.evaluatemode.vo.EvaluateModeSaveReqVO;
 import cn.fengp.basic.module.nmt.dal.dataobject.evaluatemode.EvaluateModeDO;
@@ -10,9 +12,11 @@ import cn.fengp.basic.module.nmt.service.objectivemode.ObjectiveModeService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
+import java.util.Objects;
 
 import static cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.fengp.basic.module.nmt.enums.ErrorCodeConstants.EVALUATE_MODE_NOT_EXISTS;
@@ -87,8 +91,12 @@ public class EvaluateModeServiceImpl implements EvaluateModeService {
     }
 
     @Override
-    public List<EvaluateModeDO> getEvaluateModeList() {
-         return evaluateModeMapper.selectList();
+    public List<EvaluateModeDO> listEvaluateMode(Long courseId) {
+        if(Objects.isNull(courseId)){
+            throw ServiceExceptionUtil.invalidParamException("课程标识不能为空");
+        }
+        LambdaQueryWrapperX<EvaluateModeDO> wrapperX = new LambdaQueryWrapperX<EvaluateModeDO>().eq(EvaluateModeDO::getCourseId, courseId);
+        return evaluateModeMapper.selectList(wrapperX);
     }
 
 }

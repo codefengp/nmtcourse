@@ -80,6 +80,14 @@ public class EvaluateModeController {
         return success(BeanUtils.toBean(evaluateMode, EvaluateModeRespVO.class));
     }
 
+    @GetMapping("/list")
+    @Operation(summary = "获得考核评价方式列表")
+    @PreAuthorize("@ss.hasPermission('nmt:evaluate-mode:query')")
+    public CommonResult<List<EvaluateModeRespVO>> listEvaluateMode(@RequestParam("courseId") Long courseId) {
+        List<EvaluateModeDO> evaluateMode = evaluateModeService.listEvaluateMode(courseId);
+        return success(BeanUtils.toBean(evaluateMode, EvaluateModeRespVO.class));
+    }
+
     @GetMapping("/page")
     @Operation(summary = "获得考核评价方式分页")
     @PreAuthorize("@ss.hasPermission('nmt:evaluate-mode:query')")

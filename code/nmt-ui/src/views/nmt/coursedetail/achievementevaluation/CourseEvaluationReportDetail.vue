@@ -51,6 +51,7 @@ import { ref, onMounted, reactive } from 'vue'
 import { Back, Edit, Printer } from '@element-plus/icons-vue'
 import { CourseInfoApi } from "@/api/nmt/courseinfo"
 import { TeachClassApi } from '@/api/nmt/teachclass'
+import { AchievementEvaluationApi } from '@/api/nmt/achievementevaluation'
 import { getDictLabel, DICT_TYPE } from "@/utils/dict"
 
 const emit = defineEmits(['back'])
@@ -78,30 +79,56 @@ const teachClassDetail = ref({
   totalNumber: 0
 })
 
-const scoreStats = reactive({ maxScore: '97.00', minScore: '53.12', avgScore: '80.30' })
+const scoreStats = reactive({ maxScore: '0.00', minScore: '0.00', avgScore: '0.00' })
 const distribution = ref([
-  { range: '90~100', percent: '6.6' }, { range: '80~89', percent: '51.2' },
-  { range: '70~79', percent: '36.4' }, { range: '60~69', percent: '2.5' },
-  { range: '≤59', percent: '3.3' }
+  { range: '90-100', percent: '0.0' }, { range: '80-89', percent: '0.0' },
+  { range: '70-79', percent: '0.0' }, { range: '60-69', percent: '0.0' },
+  { range: '≤59', percent: '0.0' }
 ])
 
+/** 1.课程基本信息*/
+const getCourseDetail = async () => {
+  // 1. 获取课程详情
+  const data = await CourseInfoApi.getCourseInfo(props.courseId)
+  data.majorType = getDictLabel(DICT_TYPE.NMT_MAJOR_TYPE, data.majorType)
+  data.courseType = getDictLabel(DICT_TYPE.NMT_COURSE_TYPE, data.courseType)
+  data.courseProperty = getDictLabel(DICT_TYPE.NMT_COURSE_PROPERTY, data.courseProperty)
+  data.term = getDictLabel(DICT_TYPE.NMT_TERM, data.term)
+  courseDetail.value = data
+
+  // 2. 获取教学班信息
+  const classData = await TeachClassApi.getTeachClass(props.classId)
+  teachClassDetail.value = {
+    className: classData.name,
+    totalNumber: classData.totalNumber
+  }
+}
+/** 2.课程总评成绩*/
+const getCourseOverallScore = async () => {
+    const data = await AchievementEvaluationApi.getCourseOverallScore(props.courseId,props.classId)
+    // 辅助函数：确保转为数字并保留2位小数。如果是 null/undefined 则返回 '0.00'
+    const formatNum = (num: any) => {
+        return (num !== null && num !== undefined) ? Number(num).toFixed(2) : '0.00'
+    }
+    // 1. 映射顶部三个统计指标，强制保留 2 位小数
+    scoreStats.maxScore = formatNum(data.max)
+    scoreStats.minScore = formatNum(data.min)
+    scoreStats.avgScore = formatNum(data.avg)
+    // 2. 将扁平的区间占比转换为数组格式
+    const ranges = ['90-100', '80-89', '70-79', '60-69', '≤59']
+    distribution.value = ranges.map(range => ({
+        range: range,
+        percent: data[range] || '0.0' // 获取 data["90-100"] 等值
+    }))
+}
+/** 初始化界面 */
 const initData = async () => {
   loading.value = true
   try {
-    // 1. 获取课程详情
-    const data = await CourseInfoApi.getCourseInfo(props.courseId)
-    data.majorType = getDictLabel(DICT_TYPE.NMT_MAJOR_TYPE, data.majorType)
-    data.courseType = getDictLabel(DICT_TYPE.NMT_COURSE_TYPE, data.courseType)
-    data.courseProperty = getDictLabel(DICT_TYPE.NMT_COURSE_PROPERTY, data.courseProperty)
-    data.term = getDictLabel(DICT_TYPE.NMT_TERM, data.term)
-    courseDetail.value = data
-
-    // 2. 获取教学班信息
-    const classData = await TeachClassApi.getTeachClass(props.classId)
-    teachClassDetail.value = {
-      className: classData.name,
-      totalNumber: classData.totalNumber
-    }
+   //1.课程基本信息
+   await getCourseDetail();
+   //2.课程总评成绩
+   await getCourseOverallScore();
   } catch (error) {
     console.error(error)
   } finally {

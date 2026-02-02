@@ -1,6 +1,8 @@
 package cn.fengp.basic.module.nmt.service.achievementevaluation;
 
 import java.util.*;
+
+import com.alibaba.fastjson.JSONObject;
 import jakarta.validation.*;
 import cn.fengp.basic.module.nmt.controller.admin.achievementevaluation.vo.*;
 import cn.fengp.basic.module.nmt.dal.dataobject.achievementevaluation.AchievementEvaluationDO;
@@ -59,4 +61,5 @@ public interface AchievementEvaluationService {
      */
     PageResult<AchievementEvaluationDO> getAchievementEvaluationPage(AchievementEvaluationPageReqVO pageReqVO);
 
+    JSONObject getCourseOverallScore(Long courseId, Long classId);
 }

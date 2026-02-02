@@ -15,6 +15,11 @@ export const EvaluateModeApi = {
     return await request.get({ url: `/nmt/evaluate-mode/page`, params })
   },
 
+  // 查询考核评价方式分页
+  listEvaluateMode: async (id: number) => {
+    return await request.get({ url: `/nmt/evaluate-mode/list?courseId=` + id })
+  },
+
   // 查询考核评价方式详情
   getEvaluateMode: async (id: number) => {
     return await request.get({ url: `/nmt/evaluate-mode/get?id=` + id })
