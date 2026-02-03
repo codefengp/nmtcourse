@@ -22,4 +22,17 @@
         where ncs.class_id = #{classId} and nom.course_id = #{courseId} and nsa.deleted = 0
         group by nsa.student_id ,nsa.mode_id
     </select>
+
+    <select id="getStuObjModeScoreList" resultType="com.alibaba.fastjson.JSONObject">
+        select ncs.name as studentName,nsa.student_id as studentId,SUM(nsa.score) as achscore,MAX(nom.score) as omscore ,nsa.mode_id as modeId,
+               nsa.objective_id as objectiveId,nem.name as modeName,nco.name as objectiveName,nco.content, nem.weight,nco.expect_value as expectValue
+        from nmt_student_achievement nsa
+        left join nmt_class_student ncs on nsa.student_id = ncs.id
+        left join nmt_objective_mode nom on nsa.objective_id = nom.objective_id and nsa.mode_id = nom.mode_id
+        left join nmt_course_objective nco on nom.objective_id = nco.id
+        left join nmt_evaluate_mode nem on nom.mode_id = nem.id
+        WHERE ncs.class_id = #{classId} and nom.course_id = #{courseId} and nsa.deleted = 0
+        GROUP BY nsa.student_id,nsa.mode_id ,nsa.objective_id
+        ORDER BY nsa.objective_id,nsa.mode_id,ncs.number
+    </select>
 </mapper>

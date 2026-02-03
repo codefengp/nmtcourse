@@ -109,4 +109,12 @@ public class AchievementEvaluationController {
         JSONObject overallScore = achievementEvaluationService.getCourseOverallScore(courseId, classId);
         return success(overallScore);
     }
+
+    @GetMapping("/get-obj-ache-eval")
+    @Operation(summary = "查询课程目标达成评价结果")
+    @PreAuthorize("@ss.hasPermission('nmt:achievement-evaluation:query')")
+    public CommonResult<JSONObject> getObjectiveAchievementEvaluation(@RequestParam(name = "courseId") Long courseId, @RequestParam(name = "classId") Long classId) {
+        JSONObject objAcheEval = achievementEvaluationService.getObjectiveAchievementEvaluation(courseId, classId);
+        return success(objAcheEval);
+    }
 }

@@ -62,4 +62,6 @@ public interface AchievementEvaluationService {
     PageResult<AchievementEvaluationDO> getAchievementEvaluationPage(AchievementEvaluationPageReqVO pageReqVO);
 
     JSONObject getCourseOverallScore(Long courseId, Long classId);
+
+    JSONObject getObjectiveAchievementEvaluation(Long courseId, Long classId);
 }

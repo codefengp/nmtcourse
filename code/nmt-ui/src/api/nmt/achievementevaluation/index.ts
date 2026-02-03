@@ -51,4 +51,9 @@ export const AchievementEvaluationApi = {
   getCourseOverallScore: async (courseId: number,classId:number) => {
     return await request.get({ url: `/nmt/achievement-evaluation/get-overall-score?courseId=` + courseId + `&classId=` + classId })
   },
+
+  // 查询课程目标达成评价结果
+  getObjectiveAchievementEvaluation: async (courseId: number,classId:number) => {
+    return await request.get({ url: `/nmt/achievement-evaluation/get-obj-ache-eval?courseId=` + courseId + `&classId=` + classId })
+  },
 }

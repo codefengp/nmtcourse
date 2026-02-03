@@ -30,4 +30,6 @@ public interface AchievementEvaluationMapper extends BaseMapperX<AchievementEval
     }
 
     List<JSONObject> getStuModeScoreRateList(@Param("courseId") Long courseId,@Param("classId") Long classId);
+
+    List<JSONObject> getStuObjModeScoreList(@Param("courseId") Long courseId,@Param("classId") Long classId);
 }
