@@ -11,6 +11,6 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 public class TemplateDataDTO {
-    private List<ColumnDataDTO> columns;
+    private List<HeaderDataDTO> headers;
     private List<RowDataDTO> rows;
 }

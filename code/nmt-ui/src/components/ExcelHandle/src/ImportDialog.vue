@@ -131,11 +131,9 @@ let failData: any[] = []
 /**
  * 后端统一接收：
  * {
- *   bizParams: {
- *     params,
- *     successData,
- *     failData
- *   }
+ *   bizParams: {},
+ *   successData,
+ *   failData
  * }
  */
 const buildBodyParams = () => {

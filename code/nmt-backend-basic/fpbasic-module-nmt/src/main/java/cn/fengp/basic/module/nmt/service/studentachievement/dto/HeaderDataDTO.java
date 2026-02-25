@@ -3,10 +3,10 @@ package cn.fengp.basic.module.nmt.service.studentachievement.dto;
 import lombok.Data;
 
 /**
- * 通用列数据传输对象
+ * 表头数据传输对象
  */
 @Data
-public class ColumnDataDTO {
+public class HeaderDataDTO {
     private Long planId;
     private String modeName;//考核方式
     private String content;//考核计划

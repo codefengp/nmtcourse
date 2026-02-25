@@ -7,16 +7,15 @@ import cn.fengp.basic.module.nmt.dal.dataobject.evaluateplan.EvaluatePlanExDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.studentachievement.StudentAchievementPlanDO;
 import cn.fengp.basic.module.nmt.service.classstudent.ClassStudentService;
 import cn.fengp.basic.module.nmt.service.evaluateplan.EvaluatePlanService;
-import cn.fengp.basic.module.nmt.service.studentachievement.dto.ColumnDataDTO;
+import cn.fengp.basic.module.nmt.service.studentachievement.dto.HeaderDataDTO;
+import cn.fengp.basic.module.nmt.service.studentachievement.dto.ImportRowDTO;
 import cn.fengp.basic.module.nmt.service.studentachievement.dto.RowDataDTO;
 import cn.fengp.basic.module.nmt.service.studentachievement.dto.TemplateDataDTO;
-import cn.fengp.basic.module.nmt.service.studentachievement.excel.ExcelTemplateRenderer;
+import cn.fengp.basic.module.nmt.service.studentachievement.excel.ExcelTemplateHelper;
 import cn.hutool.core.io.resource.ResourceUtil;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
@@ -30,8 +29,6 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import cn.fengp.basic.module.nmt.controller.admin.studentachievement.vo.*;
@@ -120,10 +117,8 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
     }
 
     /**
-     * 1.查询考核数据，学生成绩
-     * 2.渲染表格
-     *     2.1 设置表头内容
-     *     2.2 设置学生数据
+     * 1.准备表头数据、所有业务数据
+     * 2.渲染模板
      * 3.导出模板
      * @param response
      * @param params
@@ -131,25 +126,17 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
      */
     @Override
     public void downloadTemplate(HttpServletResponse response, JSONObject params) throws IOException {
-        JSONObject bizParams = params.getJSONObject("bizParams");
-        if(bizParams == null || !StringUtils.hasText(bizParams.getString("classId"))){
-            throw ServiceExceptionUtil.invalidParamException("班级标识不能为空");
-        }
-        if(!StringUtils.hasText(bizParams.getString("courseId"))){
-            throw ServiceExceptionUtil.invalidParamException("课程标识不能为空");
-        }
+        // 调用通用校验方法
+        JSONObject bizParams = this.getBizParams(params);
         Long classId = bizParams.getLong("classId");
         Long courseId = bizParams.getLong("courseId");
-        // 1. 组装通用数据对象
-        TemplateDataDTO templateData = prepareTemplateData(classId, courseId);
-
-        // 2. 渲染 Excel
+        // 1.准备表头数据、所有业务数据
+        TemplateDataDTO templateData = this.prepareTemplateData(classId, courseId);
         try (InputStream ins = ResourceUtil.getStream("template/achievement.xlsx");
              XSSFWorkbook work = new XSSFWorkbook(ins)) {
-
-            ExcelTemplateRenderer.render(work, templateData);
-
-            // 3. 导出
+            // 2. 渲染模板
+            ExcelTemplateHelper.renderTemplate(work, templateData,6);
+            // 3. 导出模板
             try (OutputStream out = response.getOutputStream()) {
                 work.write(out);
                 ExcelUtils.write(response, "学生成绩模板.xlsx");
@@ -158,28 +145,36 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
     }
 
     /**
-     * 核心数据准备方法
+     * 准备表头数据、所有业务数据
+     * 1.查询表头数据(考核方式、考核内容、课程目标、总分)
+     * 2.查询学生成绩数据
+     * @param classId
+     * @param courseId
+     * @return
      */
     private TemplateDataDTO prepareTemplateData(Long classId, Long courseId) {
+        // 1. 获取表头数据
         // 转换列 DTO
         List<EvaluatePlanExDO> plans = evaluatePlanService.listEvaluatePlan(courseId);
-        // 严格按顺序转换为 ColumnDataDTO
-        List<ColumnDataDTO> columns = new ArrayList<>();
+        // 严格按顺序转换为 HeaderDataDTO
+        List<HeaderDataDTO> headers = new ArrayList<>();
         for (EvaluatePlanExDO p : plans) {
-            ColumnDataDTO dto = new ColumnDataDTO();
+            HeaderDataDTO dto = new HeaderDataDTO();
             dto.setPlanId(p.getId());
             dto.setModeName(p.getModeName());
             dto.setContent(p.getContent());
             dto.setObjectiveName(p.getObjectiveName());
             dto.setScore(p.getScore().toString());
-            columns.add(dto); // 这里的 List 会保持 SQL 的原始顺序
+            headers.add(dto); // 这里的 List 会保持 SQL 的原始顺序
         }
 
+        // 2.查询学生成绩数据
         // 转换行 DTO (使用 LinkedHashMap 保持数据库查询顺序)
         List<StudentAchievementPlanDO> achievements = studentAchievementMapper.listStudentWithAchievement(classId);
         Map<Long, RowDataDTO> studentMap = new LinkedHashMap<>();
 
         for (StudentAchievementPlanDO sa : achievements) {
+            //判断studentId 是否存在
             RowDataDTO row = studentMap.computeIfAbsent(sa.getStudentId(), k -> {
                 RowDataDTO r = new RowDataDTO();
                 r.setStudentId(sa.getStudentId());
@@ -187,11 +182,13 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
                 r.setStudentNumber(sa.getStudentNumber());
                 return r;
             });
+            //判断学生考核计划是否为空、不为空设置成绩
             if (sa.getPlanId() != null) {
+                //Map<Long, String> scores, Key: planId, Value: score
                 row.getScores().put(sa.getPlanId(), sa.getScore() != null ? sa.getScore().toString() : "");
             }
         }
-        return new TemplateDataDTO(columns, new ArrayList<>(studentMap.values()));
+        return new TemplateDataDTO(headers, new ArrayList<>(studentMap.values()));
     }
 
     /**
@@ -204,15 +201,109 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
      */
     @Override
     public JSONObject validateImport(MultipartFile file, JSONObject params) throws IOException {
-        JSONObject bizParams = params.getJSONObject("bizParams");
-        if(bizParams == null || !StringUtils.hasText(bizParams.getString("classId"))){
-            throw ServiceExceptionUtil.invalidParamException("班级标识不能为空");
-        }
+        // 调用通用校验方法
+        JSONObject bizParams = this.getBizParams(params);
         Long classId = bizParams.getLong("classId");
-        //1.获取导入数据
-        JSONObject importData = this.getImportData(file,4,6);
-        //2.验证表格数据
-        return this.validateImpData(importData,classId,4);
+        Long courseId = bizParams.getLong("courseId");
+        // 1. 准备校验上下文 (Context)
+        List<ClassStudentDO> studentList = classStudentService.listClassStudent(classId);
+        Map<String, ClassStudentDO> stuMap = studentList.stream()
+                .collect(Collectors.toMap(s -> s.getNumber() + s.getName(), s -> s, (v1, v2) -> v1));
+
+        List<EvaluatePlanExDO> plans = evaluatePlanService.listEvaluatePlan(courseId);
+        Map<Long, BigDecimal> planMap = plans.stream()
+                .collect(Collectors.toMap(EvaluatePlanExDO::getId, EvaluatePlanExDO::getScore));
+
+        // 2. 解析数据 (第一步：获取数据)
+        List<ImportRowDTO> allRows = parseExcelToImportDTOs(file);
+
+        // 3. 执行校验 (第二步：验证数据)
+        List<ImportRowDTO> successData = new ArrayList<>();
+        List<ImportRowDTO> failData = new ArrayList<>();
+
+        for (ImportRowDTO row : allRows) {
+            // --- 调用独立的校验方法 ---
+            this.doBusinessValidate(row, stuMap, planMap);
+            if (row.hasError()) {
+                failData.add(row);
+            } else {
+                successData.add(row);
+            }
+        }
+
+        // 4. 返回结果
+        JSONObject res = new JSONObject();
+        res.put("successData", successData);
+        res.put("failData", failData);
+        return res;
+    }
+
+    /**
+     * 解析 excel导入数据,并转成dto格式
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    private List<ImportRowDTO> parseExcelToImportDTOs(MultipartFile file) throws IOException {
+        String sourceFileName = file.getOriginalFilename();
+        if(sourceFileName.endsWith(".xls")){
+            throw ServiceExceptionUtil.invalidParamException("导入文件格式xls与模版格式xlsx不匹配，请重新下载模版导入");
+        }
+        List<ImportRowDTO> list = new ArrayList<>();
+        try (InputStream is = file.getInputStream(); Workbook wk = new XSSFWorkbook(is)) {
+            Sheet sheet = wk.getSheetAt(0);
+            Row hideRow = sheet.getRow(4); // 隐藏行 planId
+
+            for (int i = 6; i <= sheet.getLastRowNum(); i++) {
+                Row r = sheet.getRow(i);
+                if (r == null || ExcelTemplateHelper.isRowEmpty(r)) continue;
+
+                ImportRowDTO dto = new ImportRowDTO();
+                dto.setRowIndex(i + 1);
+                dto.setStudentNumber(ExcelTemplateHelper.getCellValue(r.getCell(0)));
+                dto.setStudentName(ExcelTemplateHelper.getCellValue(r.getCell(1)));
+
+                for (int j = 2; j < hideRow.getLastCellNum(); j++) {
+                    String planIdStr = ExcelTemplateHelper.getCellValue(hideRow.getCell(j));
+                    if (ExcelTemplateHelper.isNumeric(planIdStr)) {
+                        dto.getScores().put(Long.valueOf(planIdStr), ExcelTemplateHelper.getCellValue(r.getCell(j)));
+                    }
+                }
+                list.add(dto);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * 核心业务校验逻辑
+     * @param row 待校验的数据行
+     * @param stuMap 学生索引上下文
+     * @param planMap 考核计划分值上限上下文
+     */
+    private void doBusinessValidate(ImportRowDTO row, Map<String, ClassStudentDO> stuMap, Map<Long, BigDecimal> planMap) {
+        // 1. 验证学生是否存在
+        String stuKey = row.getStudentNumber() + row.getStudentName();
+        ClassStudentDO stu = stuMap.get(stuKey);
+
+        if (stu == null) {
+            row.addError("student", "该学生不属于当前班级，请检查学号和姓名");
+        } else {
+            row.setStudentId(stu.getId());
+        }
+
+        // 2. 验证每一项成绩
+        row.getScores().forEach((planId, scoreStr) -> {
+            BigDecimal maxScore = planMap.get(planId);
+            if (!StringUtils.hasText(scoreStr) || !ExcelTemplateHelper.isNumeric(scoreStr)) {
+                row.addError(planId.toString(), "成绩必须为有效数字");
+            } else {
+                BigDecimal stuScore = new BigDecimal(scoreStr);
+                if (stuScore.compareTo(BigDecimal.ZERO) < 0 || (maxScore != null && stuScore.compareTo(maxScore) > 0)) {
+                    row.addError(planId.toString(), "分值超出合法范围(0-" + (maxScore == null ? "未知" : maxScore) + ")");
+                }
+            }
+        });
     }
 
     /**
@@ -231,71 +322,27 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
      */
     @Override
     public void outFail(HttpServletResponse response, JSONObject params) throws IOException {
-        //1.获取导入数据、参数
-        JSONObject bizParams = params.getJSONObject("bizParams");
-        if (bizParams == null || !StringUtils.hasText(bizParams.getString("classId"))) {
-            throw ServiceExceptionUtil.invalidParamException("班级标识不能为空");
-        }
-        if (!StringUtils.hasText(bizParams.getString("courseId"))) {
-            throw ServiceExceptionUtil.invalidParamException("课程标识不能为空");
-        }
+        // 调用通用校验方法
+        JSONObject bizParams = this.getBizParams(params);
+        Long classId = bizParams.getLong("courseId");
         Long courseId = bizParams.getLong("courseId");
-        JSONArray successData = params.getJSONArray("successData");
-        JSONArray failData = params.getJSONArray("failData");
-        //2.渲染表格
-        //2.1设置表头内容(查询考核数据，学生成绩)
-        List<JSONObject> column = this.queryWithFormatPlan(courseId);
-        InputStream ins = ResourceUtil.getStream("template/achievement.xlsx");
-        XSSFWorkbook work = new XSSFWorkbook(ins);
-        XSSFCellStyle style = this.createHeaderStyle(work);
-        XSSFCellStyle style1 = this.createRedStyle(work);
-        //得到excel的第0张表
-        XSSFSheet sheet = work.getSheetAt(0);
-        //设置表头-返回隐藏行计划id
-        XSSFRow row4 = this.buildHeader(sheet, column, style, style1);
-        //表头行数
-        int headRowCount = 6;
-        //2.2 设置验证错误行内容
-        if (!CollectionUtils.isEmpty(failData)) {
-            for (int i = 0; i < failData.size(); i++) {
-                JSONObject var = (JSONObject) failData.get(i);
-                XSSFRow rowi = sheet.createRow(i + headRowCount);
-                for (int j = 0; j < row4.getLastCellNum(); j++) {
-                    XSSFCell cellij = rowi.createCell(j);
-                    cellij.setCellValue(var.getString(row4.getCell(j).getStringCellValue()));
-                    //2.3 设置错误批注 (根据key: 隐藏行计划id__error 获取错误提示批注)
-                    if (var.get(row4.getCell(j).getStringCellValue() + "__error") != null) {
-                        XSSFDrawing p = sheet.createDrawingPatriarch();
-                        XSSFComment comment = p.createCellComment(new XSSFClientAnchor(0, 0, 0, 0, (short) 3, 3, (short) 5, 6));
-                        //输入批注信息
-                        comment.setString(new XSSFRichTextString(var.getString(row4.getCell(j).getStringCellValue() + "__error")));
-                        cellij.setCellComment(comment);
-                    }
-                }
-            }
+        List<ImportRowDTO> successData = params.getJSONArray("successData").toJavaList(ImportRowDTO.class);
+        List<ImportRowDTO> failData = params.getJSONArray("failData").toJavaList(ImportRowDTO.class);
+
+        // 3. 获取表头元数据
+        TemplateDataDTO templateData = this.prepareTemplateData(classId, courseId);
+
+        // 4. 执行渲染
+        try (InputStream ins = ResourceUtil.getStream("template/achievement.xlsx");
+             XSSFWorkbook work = new XSSFWorkbook(ins)) {
+
+            // 调用 Helper 中专门为失败设计的渲染入口
+            ExcelTemplateHelper.renderFail(work, templateData, 6,failData, successData);
+
+            // 5. 导出
+            ExcelUtils.write(response, "成绩导入错误核对表.xlsx");
+            work.write(response.getOutputStream());
         }
-        //2.4 分割行标识
-        XSSFRow rowFailEnd = sheet.createRow(headRowCount + failData.size());
-        XSSFCell cellFailEnd = rowFailEnd.createCell(0);
-        cellFailEnd.setCellStyle(style1);
-        cellFailEnd.setCellValue("------------------------错误数据分割行，下方是验证通过的数据行----------------------");
-        CellRangeAddress a = new CellRangeAddress(headRowCount + failData.size(), headRowCount + failData.size(), 0, 8);
-        sheet.addMergedRegion(a);
-        //2.5 设置验证正确数据
-        if (!CollectionUtils.isEmpty(successData)) {
-            for (int i = 0; i < successData.size(); i++) {
-                JSONObject var = (JSONObject) successData.get(i);
-                XSSFRow rowi = sheet.createRow(headRowCount + 1 + failData.size() + i);
-                for (int j = 0; j < row4.getLastCellNum(); j++) {
-                    XSSFCell cellij = rowi.createCell(j);
-                    cellij.setCellValue(var.getString(row4.getCell(j).getStringCellValue()));
-                }
-            }
-        }
-        //3.导出错误模板
-        OutputStream out = response.getOutputStream();
-        work.write(out);// 将数据写出去
-        ExcelUtils.write(response, "错误信息模板.xlsx");
     }
 
     /**
@@ -310,58 +357,71 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
      */
     @Override
     public void importExcel(JSONObject params) {
-        //1.获取导入数据、参数
-        JSONObject bizParams = params.getJSONObject("bizParams");
-        if(bizParams == null || !StringUtils.hasText(bizParams.getString("classId"))){
-            throw ServiceExceptionUtil.invalidParamException("班级标识不能为空");
-        }
-        if(bizParams == null || !StringUtils.hasText(bizParams.getString("courseId"))){
-            throw ServiceExceptionUtil.invalidParamException("课程标识不能为空");
-        }
+        // 调用通用校验方法
+        JSONObject bizParams = this.getBizParams(params);
         Long classId = bizParams.getLong("classId");
         Long courseId = bizParams.getLong("courseId");
-        JSONArray successData = params.getJSONArray("successData");
+        // 将 JSONObject 序列化为我们定义的 DTO
+        List<ImportRowDTO> successData = params.getJSONArray("successData").toJavaList(ImportRowDTO.class);
         if (CollectionUtils.isEmpty(successData)) {
-            throw ServiceExceptionUtil.invalidParamException("导入数据不能为空");
+            throw ServiceExceptionUtil.invalidParamException("没有可导入的有效数据");
         }
 
-        //2.获取所有考核计划数据
+        // 2. 获取所有考核计划元数据
         List<EvaluatePlanExDO> planList = evaluatePlanService.listEvaluatePlan(courseId);
 
-        //3.获取数据库已有成绩数据
+        // 3. 性能优化：预处理数据库已有成绩
+        // 将已有成绩转为 Map，Key 为 "studentId_planId"，实现 O(1) 级别的快速查找
         List<StudentAchievementDO> existAchievementList = studentAchievementMapper.listStudentAchievement(classId);
-
-        //4.获取表格所有考核计划成绩
+        Map<String, StudentAchievementDO> existMap = existAchievementList.stream()
+                .collect(Collectors.toMap(
+                        e -> e.getStudentId() + "_" + e.getPlanId(),
+                        e -> e,
+                        (v1, v2) -> v1 // 防重处理
+                ));
+        // 4. 构建待入库的列表
         List<StudentAchievementDO> resultList = new ArrayList<>();
-        for (Object object : successData) {
-            JSONObject sud = (JSONObject) object;
-            //4.1.判断成绩是否已存在，存在则更新，不存在则新增--通过studentId、planId判断
+
+        for (ImportRowDTO rowDto : successData) {
+            Long studentId = rowDto.getStudentId();
             for (EvaluatePlanExDO plan : planList) {
-                Optional<StudentAchievementDO> achDo = existAchievementList.stream()
-                        .filter(e -> e.getStudentId().equals(sud.getLong("studentId"))
-                                && e.getPlanId().equals(plan.getId())).findFirst();
-                StudentAchievementDO achievementDO = achDo.orElseGet(StudentAchievementDO::new);
-                if(!achDo.isPresent()){
-                    achievementDO.setStudentId(sud.getLong("studentId"));
-                    achievementDO.setPlanId(plan.getId());
-                    achievementDO.setObjectiveId(plan.getObjectiveId());//课程目标
-                    achievementDO.setModeId(plan.getModeId());//考核方式
+                Long planId = plan.getId();
+                String key = studentId + "_" + planId;
+                // 4.1 判断是更新还是新增
+                StudentAchievementDO achievementDO = existMap.getOrDefault(key, new StudentAchievementDO());
+                // 如果是新增，初始化基础信息
+                if (achievementDO.getId() == null) {
+                    achievementDO.setStudentId(studentId);
+                    achievementDO.setPlanId(planId);
+                    achievementDO.setObjectiveId(plan.getObjectiveId());
+                    achievementDO.setModeId(plan.getModeId());
                 }
-                //k: planId,v: score
-                String score = sud.getString(plan.getId().toString());
-                if(!StringUtils.hasText(score)){
-                    throw ServiceExceptionUtil.invalidParamException("导入数据缺少考核计划内容，请检查表格");
+                // 4.2 从 DTO 的 Scores Map 中获取对应计划的成绩
+                String scoreStr = rowDto.getScores().get(planId);
+                if (!StringUtils.hasText(scoreStr)) {
+                    // 如果在第二阶段校验得当，这里通常不会报错，但为了健壮性保留异常
+                    throw ServiceExceptionUtil.invalidParamException("学号 [" + rowDto.getStudentNumber() + "] 缺少考核项 [" + plan.getContent() + "] 的成绩");
                 }
-                //格式：两位小数，直接截取
-                achievementDO.setScore(new BigDecimal(score).setScale(2, RoundingMode.DOWN));
-                //保存数据
+
+                // 格式化成绩：两位小数，直接截取（向下取整）
+                achievementDO.setScore(new BigDecimal(scoreStr).setScale(2, RoundingMode.DOWN));
+
                 resultList.add(achievementDO);
             }
         }
-        //5.导入数据 -> 更新/新增
-        studentAchievementMapper.insertOrUpdate(resultList);
+        // 5. 批量执行更新/新增
+        // 注意：这里的 insertOrUpdate 需要在 MyBatis 中使用 ON DUPLICATE KEY UPDATE 或相关批量语法
+        if (!resultList.isEmpty()) {
+            studentAchievementMapper.insertOrUpdate(resultList);
+        }
     }
 
+    /**
+     * 导出成绩表
+     * @param response
+     * @param params
+     * @throws IOException
+     */
     @Override
     public void exportExcelData(HttpServletResponse response, JSONObject params) throws IOException {
         //直接调用下载模板
@@ -369,374 +429,22 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
     }
 
     /**
-     * 获取导入数据
-     * @param file
-     * @param hideRowNum 隐藏行号
-     * @param firstRowNum 第一行有效数据行号
+     * 统一判断业务参数
+     * @param params
      * @return
      */
-    private JSONObject getImportData(MultipartFile file,int hideRowNum,int firstRowNum) throws IOException {
-        JSONObject result = new JSONObject();
-        List<JSONObject> textList = new ArrayList<JSONObject>();
-        InputStream inputStream = file.getInputStream();
-        String sourceFileName = file.getOriginalFilename();
-        Workbook wk = null;
-        if(sourceFileName.endsWith(".xls")){
-            throw ServiceExceptionUtil.invalidParamException("导入文件格式xls与模版格式xlsx不匹配，请重新下载模版导入");
-        }else if (sourceFileName.endsWith(".xlsx")){
-            wk= new XSSFWorkbook(inputStream);
+    private JSONObject getBizParams(JSONObject params) {
+        JSONObject bizParams = params.getJSONObject("bizParams");
+        if (bizParams == null) {
+            throw ServiceExceptionUtil.invalidParamException("业务参数不能为空");
         }
-        if(Objects.nonNull(wk)){
-            //获取第一张Sheet表
-            Sheet sheet=wk.getSheetAt(0);
-            Row hideRow = sheet.getRow(hideRowNum);
-            //表头数据
-            String[][] strColumn =new String[firstRowNum][hideRow.getLastCellNum()];
-            strColumn[hideRowNum][0] = "number";
-            strColumn[hideRowNum][1] = "name";
-            for(Row r : sheet){
-                //保存表头数据
-                if(r.getRowNum()<firstRowNum){
-                    for(Cell c:r){
-                        if(!StringUtils.hasText(strColumn[c.getRowIndex()][c.getColumnIndex()]) ){
-                            c.setCellType(CellType.STRING);
-                            strColumn[c.getRowIndex()][c.getColumnIndex()] = c.getStringCellValue();
-                        }
-                    }
-                    continue;
-                }
-                //表体内容数据
-                JSONObject info = new JSONObject();
-                info.put("row_num", r.getRowNum());
-                for(int i=0;i<r.getLastCellNum() ;i++){
-                    Cell cell = r.getCell(i);
-                    if(cell!=null){
-                        cell.setCellType(CellType.STRING);
-                        //隐藏行计划id为key
-                        info.put(strColumn[hideRowNum][i], cell.getStringCellValue());
-                    }else {
-                        info.put(strColumn[hideRowNum][i],"");
-                    }
-                }
-                textList.add(info);
-            }
-            result.put("strColumn", strColumn);
-            result.put("textList", textList);
+        if (!StringUtils.hasText(bizParams.getString("classId"))) {
+            throw ServiceExceptionUtil.invalidParamException("班级标识不能为空");
         }
-        return result;
+        if (!StringUtils.hasText(bizParams.getString("courseId"))) {
+            throw ServiceExceptionUtil.invalidParamException("课程标识不能为空");
+        }
+        return bizParams;
     }
 
-    /**
-     * 验证导入数据
-     *  1.获取班级学生信息
-     *  2.验证数据
-     *      2.1 验证学生是否存在
-     *      2.2 验证成绩为数字，且在0到计划总分之间
-     *  3.返回验证结果
-     * @param importData
-     * @param classId
-     * @param hideRowNum 隐藏行号
-     * @return
-     */
-    private JSONObject validateImpData(JSONObject importData, Long classId, int hideRowNum) {
-        String[][] strColumn = (String[][]) importData.get("strColumn");
-        if(Objects.isNull(importData.get("textList"))){
-            throw ServiceExceptionUtil.invalidParamException("导入数据为空，请检查表格数据");
-        }
-        List<JSONObject> textList = (List<JSONObject>) importData.get("textList");
-        JSONObject resultJO = new JSONObject();
-        List<JSONObject> successData = new ArrayList<JSONObject>();
-        List<JSONObject> failData = new ArrayList<JSONObject>();
-
-        //1.获取班级学生信息
-        List<ClassStudentDO> existStuList = classStudentService.listClassStudent(classId);
-        //2.验证数据
-        for (JSONObject var : textList) {
-            boolean pass = true;
-            String number = var.getString("number");
-            String name = var.getString("name");
-            boolean stuExist = false;
-            //2.1 判断学生是否存在，且是该班级学生
-            for (ClassStudentDO existStu : existStuList) {
-                boolean isNotEmpty = StringUtils.hasText(number) && StringUtils.hasText(name);
-                if (isNotEmpty && number.equals(existStu.getNumber()) && name.equals(existStu.getName())) {
-                    stuExist = true;
-                    var.put("studentId", existStu.getId());
-                    break;
-                }
-            }
-            //2.2 验证成绩为数字，且在0到计划总分之间
-            if (stuExist) {
-                //依次判断每个考核计划分数
-                for (int i = 2; i < strColumn[hideRowNum].length; i++) {
-                    //计划总分
-                    String totalScore = strColumn[hideRowNum - 1][i];
-                    //学生成绩
-                    String score = var.getString(strColumn[hideRowNum][i]);
-                    if (!this.isNumeric(totalScore) || !this.isNumeric(score)) {
-                        var.put(strColumn[hideRowNum][i] + "__error", "成绩填写有误！学生成绩和总分必须为数字！");
-                        pass = false;
-                        continue;
-                    }
-                    BigDecimal tolScore = new BigDecimal(totalScore);
-                    BigDecimal stuScore = new BigDecimal(score);
-                    if (stuScore.compareTo(BigDecimal.ZERO) < 0 || stuScore.compareTo(tolScore) > 0) {
-                        var.put(strColumn[hideRowNum][i] + "__error", "成绩填写有误！成绩范围是0到总分之间！");
-                        pass = false;
-                    }
-                }
-            } else {
-                var.put(strColumn[hideRowNum][0] + "__error", "该教学班级未找到学生关联数据！请检查！");
-                pass = false;
-            }
-            if (pass) {
-                successData.add(var);
-            } else {
-                failData.add(var);
-            }
-        }
-        //3.返回验证结果
-        resultJO.put("successData", successData);
-        if (failData.size() > 0) {
-            resultJO.put("failData", failData);
-        }
-        return resultJO;
-    }
-
-
-    /**
-     * 设置表头内容
-     * @param sheet
-     * @param column
-     * @return
-     */
-    private XSSFRow buildHeader(XSSFSheet sheet,List<JSONObject> column,XSSFCellStyle style,XSSFCellStyle style1) {
-        XSSFRow row0 = sheet.createRow(0);
-        XSSFRow row1 = sheet.createRow(1);
-        XSSFRow row2 = sheet.createRow(2);
-        XSSFRow row3 = sheet.createRow(3);
-        XSSFRow row4 = sheet.createRow(4);
-        XSSFRow row5 = sheet.createRow(5);
-        //计划id隐藏行
-        row4.setZeroHeight(true);
-        row0.createCell(0).setCellValue("考核方式");
-        row1.createCell(0).setCellValue("考核内容");
-        row2.createCell(0).setCellValue("课程目标");
-        row3.createCell(0).setCellValue("总分值");
-        row4.createCell(0).setCellValue("number");
-        row4.createCell(1).setCellValue("name");
-        row5.createCell(0).setCellValue("学号");
-        row5.createCell(1).setCellValue("姓名");
-
-        XSSFCell cell52 = row5.createCell(2);
-        cell52.setCellValue("--说明：直接根据学生学号、姓名输入对应的的成绩，不要改动表头的任何数据--");
-        cell52.setCellStyle(style1);
-        // 设置样式
-        row0.getCell(0).setCellStyle(style);
-        row1.getCell(0).setCellStyle(style);
-        row2.getCell(0).setCellStyle(style);
-        row3.getCell(0).setCellStyle(style);
-        row5.getCell(0).setCellStyle(style);
-        row5.getCell(1).setCellStyle(style);
-
-        sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 1));
-        sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 1));
-        sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 1));
-        sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 1));
-        sheet.addMergedRegion(new CellRangeAddress(5, 5, 2, 10));
-        // 动态表头
-        for (int i = 0, index = 2; i < column.size(); i++) {
-            JSONObject col = column.get(i);
-            List<JSONObject> planList = (List<JSONObject>) col.get("planList");
-
-            XSSFCell cell0Index = row0.createCell(index);
-            cell0Index.setCellValue(col.getString("modeName"));
-            cell0Index.setCellStyle(style);
-            //一个课程目标多个考核计划
-            if (planList.size() > 1) {
-                sheet.addMergedRegion(
-                        new CellRangeAddress(0, 0, index, index + planList.size() - 1));
-            }
-            for (int j = 0; j < planList.size(); j++) {
-                JSONObject obj = planList.get(j);
-
-                XSSFCell c1 = row1.createCell(index + j);
-                c1.setCellValue(obj.getString("content"));
-                c1.setCellStyle(style);
-
-                XSSFCell c2 = row2.createCell(index + j);
-                c2.setCellValue(obj.getString("objectiveName"));
-                c2.setCellStyle(style);
-
-                XSSFCell c3 = row3.createCell(index + j);
-                c3.setCellValue(obj.getString("score"));
-                c3.setCellStyle(style);
-                row4.createCell(index + j)
-                        .setCellValue(obj.getString("planId"));
-            }
-            index += planList.size();
-        }
-        return row4; // 返回隐藏行，后面学生成绩要用
-    }
-
-    /**
-     * 设置学生成绩
-     * @param sheet
-     * @param stuAchievements
-     * @param row4
-     */
-    private void fillStudentData(XSSFSheet sheet,List<JSONObject> stuAchievements,XSSFRow row4) {
-        //考核计划id隐藏行
-        short a = row4.getLastCellNum();
-        for(int i=0;i<stuAchievements.size();i++){
-            JSONObject param = stuAchievements.get(i);
-            XSSFRow dataRow = sheet.createRow(6+i);
-            dataRow.createCell(0)
-                    .setCellValue(param.getString("studentNumber"));
-            dataRow.createCell(1)
-                    .setCellValue(param.getString("studentName"));
-            for(int j = 2;j<a;j++){
-                dataRow.createCell(j).setCellValue(param.getString(row4.getCell(j)
-                                                .getStringCellValue()
-                                                .toLowerCase()));
-            }
-        }
-    }
-
-    /**
-     * 查询并格式化考核方式表头数据
-     * @param courseId
-     * @return
-     */
-    private List<JSONObject> queryWithFormatPlan(Long courseId) {
-        List<EvaluatePlanExDO> planList = evaluatePlanService.listEvaluatePlan(courseId);
-        List<JSONObject> column = new ArrayList<>();//表头数据
-        for (EvaluatePlanExDO plan : planList) {
-            boolean isNewMode = true;//是否新考核方式
-            boolean isNewPlan = true;//是否新考核计划
-            JSONObject newMode = new JSONObject();
-            JSONObject newPlan = new JSONObject();
-            //判断是否已有考核方式
-            for (JSONObject col : column) {
-                if(StringUtils.hasText(col.getString("modeId"))
-                        && col.getString("modeId").equals(plan.getModeId().toString())){
-                    isNewMode = false;
-                    newMode = col;
-                    break;
-                }
-            }
-            //新考核方式
-            if(isNewMode){
-                newMode.put("modeId",plan.getModeId());
-                newMode.put("modeName",plan.getModeName());
-                newMode.put("planCount",1);
-                List<JSONObject> subPlanList = new ArrayList<>();
-                newPlan.put("planId",plan.getId());
-                newPlan.put("content",plan.getContent());
-                newPlan.put("objectiveName",plan.getObjectiveName());
-                newPlan.put("score",plan.getScore());
-                subPlanList.add(newPlan);//考核方式下新增考核计划
-                newMode.put("planList",subPlanList);//考核方式下新增计划集合
-                column.add(newMode);//表头新增考核方式
-            }else{
-                //判断是否已有考核计划
-                List<JSONObject> existPlanList = (List<JSONObject>)newMode.get("planList");
-                for (JSONObject existPlan : existPlanList) {
-                    if(existPlan.getString("planId").equals(plan.getId().toString())){
-                        isNewPlan = false;
-                        break;
-                    }
-                }
-                //新考核计划
-                if(isNewPlan){
-                    newPlan.put("planId",plan.getId());
-                    newPlan.put("content",plan.getContent());
-                    newPlan.put("objectiveName",plan.getObjectiveName());
-                    newPlan.put("score",plan.getScore());
-                    existPlanList.add(newPlan);//考核方式下新增考核计划
-                    newMode.put("planCount",existPlanList.size());//更新考核方式下考核计划数量
-                }
-            }
-        }
-        return column;
-    }
-
-    /**
-     * 查询并格式化学生成绩
-     * @param classId
-     * @return
-     */
-    private List<JSONObject> queryWithFormatStudentAchievement(Long classId) {
-        List<StudentAchievementPlanDO> achievementList = studentAchievementMapper.listStudentWithAchievement(classId);
-        List<JSONObject> result = new ArrayList<JSONObject>();
-        for (StudentAchievementPlanDO achievement : achievementList) {
-            boolean isNewStu = true;
-            JSONObject newStu = new JSONObject();
-            for (JSONObject res : result) {
-                if(res.getString("studentId").equals(achievement.getStudentId().toString())){
-                    isNewStu = false;
-                    newStu = res;
-                    break;
-                }
-            }
-            //用计划标识作key,添加计划成绩
-            if(Objects.nonNull(achievement.getPlanId())){
-                newStu.put(achievement.getPlanId().toString(),achievement.getScore());
-            }
-            if(isNewStu){
-                newStu.put("studentId",achievement.getStudentId());
-                newStu.put("studentName",achievement.getStudentName());
-                newStu.put("studentNumber",achievement.getStudentNumber());
-                result.add(newStu);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * 设置单元格内容居中
-     * @param work
-     * @return
-     */
-    private XSSFCellStyle createHeaderStyle(XSSFWorkbook work) {
-        XSSFCellStyle style = work.createCellStyle();
-        style.setAlignment(HorizontalAlignment.CENTER);
-        style.setVerticalAlignment(VerticalAlignment.CENTER);
-
-        XSSFFont font = work.createFont();
-        font.setBold(true);
-        style.setFont(font);
-
-        return style;
-    }
-
-    /**
-     * 字体红色
-     * @param work
-     * @return
-     */
-    private XSSFCellStyle createRedStyle(XSSFWorkbook work) {
-        XSSFCellStyle style = work.createCellStyle();
-        XSSFFont font = work.createFont();
-        font.setColor(IndexedColors.RED.getIndex());
-        style.setFont(font);
-        return style;
-    }
-
-    /**
-     * 判断字符串是否是整数或者小数
-     * @param str
-     * @return
-     */
-    public static boolean isNumeric(String str){
-        if(!StringUtils.hasText(str)){
-            return false;
-        }
-        Pattern pattern = Pattern.compile("[0-9]*\\.?[0-9]+");
-        Matcher isNum = pattern.matcher(str);
-        if (!isNum.matches()) {
-            return false;
-        }
-        return true;
-    }
 }

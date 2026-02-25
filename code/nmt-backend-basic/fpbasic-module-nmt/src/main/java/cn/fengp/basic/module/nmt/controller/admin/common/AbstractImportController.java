@@ -3,6 +3,7 @@ package cn.fengp.basic.module.nmt.controller.admin.common;
 import cn.fengp.basic.framework.common.pojo.CommonResult;
 import com.alibaba.fastjson.JSONObject;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -40,8 +41,9 @@ public abstract class AbstractImportController<T> {
      * 公共解析前端参数方法
      */
     protected JSONObject parseBodyParams(String bodyParams) {
-        if (bodyParams == null || bodyParams.isEmpty())
+        if(!StringUtils.hasText(bodyParams)){
             return new JSONObject();
+        }
         JSONObject params = JSONObject.parseObject(bodyParams);
         return params == null ? new JSONObject() : params;
     }

@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 通用行数据传输对象
+ * 业务行数据传输对象
  */
 @Data
 public class RowDataDTO {
