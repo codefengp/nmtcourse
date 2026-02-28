@@ -35,10 +35,8 @@ public class ExcelTemplateHelper {
         List<HeaderDataDTO> headers = templateData.getHeaders();
         //业务行数据
         List<RowDataDTO> rows = templateData.getRows();
-
         // 1. 绘制表头
         int lastColIdx = drawHeader(sheet, headers, headerCursor, headerStyle, tipStyle);
-
         // 2. 填充业务行数据 (模板下载不需要批注，errorMap 传 null)
         for (int i = 0; i < rows.size(); i++) {
             // 数据行从第 headerCursor 行开始
@@ -49,37 +47,36 @@ public class ExcelTemplateHelper {
 
     /**
      * 【第三阶段入口】错误数据导出渲染（带分割线、批注）
+     *      1. 画表头
+     *      2. 填充校验失败的数据 (带批注)
+     *      3. 绘制分割行
+     *      4. 填充校验成功的数据 (不带批注)
      * @param headerCursor 表头总行数
      * @param failData 校验失败的数据
      * @param successData 校验成功的数据
      */
     public static void renderFail(XSSFWorkbook workbook,
-                                  TemplateDataDTO templateData,
+                                  List<HeaderDataDTO> headers,
                                   int headerCursor,
                                   List<ImportRowDTO> failData,
                                   List<ImportRowDTO> successData) {
         XSSFSheet sheet = workbook.getSheetAt(0);
         XSSFCellStyle headerStyle = createHeaderStyle(workbook);
         XSSFCellStyle redStyle = createRedStyle(workbook);
-
-        List<HeaderDataDTO> headers = templateData.getHeaders();
         // 1. 画表头
         int lastColIdx = drawHeader(sheet, headers, headerCursor,headerStyle, redStyle);
-
         // 2. 填充校验失败的数据 (带批注)
         if (failData != null) {
             for (ImportRowDTO row : failData) {
                 fillRowData(sheet.createRow(headerCursor++), row, 2, headers, row.getErrorMap());
             }
         }
-
         // 3. 绘制分割行
         XSSFRow splitRow = sheet.createRow(headerCursor++);
         XSSFCell splitCell = splitRow.createCell(0);
         splitCell.setCellStyle(redStyle);
         splitCell.setCellValue("------------------------错误数据分割行，下方是验证通过的数据行----------------------");
         sheet.addMergedRegion(new CellRangeAddress(splitRow.getRowNum(), splitRow.getRowNum(), 0, lastColIdx));
-
         // 4. 填充校验成功的数据 (不带批注)
         if (successData != null) {
             for (ImportRowDTO row : successData) {
@@ -97,7 +94,6 @@ public class ExcelTemplateHelper {
         for (int i = 0; i < headerCursor; i++) {
             headerRows[i] = sheet.getRow(i) == null ? sheet.createRow(i) : sheet.getRow(i);
         }
-
         // 1. 填充固定文本
         headerRows[0].createCell(0).setCellValue("考核方式");
         headerRows[1].createCell(0).setCellValue("考核内容");
@@ -107,7 +103,6 @@ public class ExcelTemplateHelper {
         headerRows[4].createCell(1).setCellValue("name");
         headerRows[5].createCell(0).setCellValue("学号");
         headerRows[5].createCell(1).setCellValue("姓名");
-
         // 2. 动态填充考核列数据
         int startCol = 2;
         for (int i = 0; i < headers.size(); i++) {
@@ -118,23 +113,21 @@ public class ExcelTemplateHelper {
             headerRows[2].createCell(colIdx).setCellValue(col.getObjectiveName());
             headerRows[3].createCell(colIdx).setCellValue(col.getScore());
             headerRows[4].createCell(colIdx).setCellValue(col.getPlanId().toString());
-
             // 应用表头样式 (前4行)
             for (int j = 0; j < 4; j++) {
                 headerRows[j].getCell(colIdx).setCellStyle(headerStyle);
             }
         }
-
         // 3. 应用固定列样式及合并
         for (int i = 0; i < 4; i++) {
             headerRows[i].getCell(0).setCellStyle(headerStyle);
+            //表头合并前两列
             sheet.addMergedRegion(new CellRangeAddress(i, i, 0, 1));
         }
+        headerRows[4].setZeroHeight(true); // 隐藏 planId 行
         headerRows[5].getCell(0).setCellStyle(headerStyle);
         headerRows[5].getCell(1).setCellStyle(headerStyle);
-        headerRows[4].setZeroHeight(true); // 隐藏 planId 行
-
-        // 4. 【核心合并逻辑】处理考核方式跨列合并（无省略）
+        // 4. 【核心合并逻辑】处理考核方式跨列合并
         if (headers.size() > 1) {
             int currentGroupStart = startCol;
             for (int i = 1; i < headers.size(); i++) {
@@ -148,12 +141,12 @@ public class ExcelTemplateHelper {
                 }
             }
             // 处理最后一组合并
+            // 例如：【作业, 作业, 期中, 期中】,最后一组是【期中, 期中】,后面没有“新成员”触发if判断进行合并
             int finalEndColIdx = startCol + headers.size() - 1;
             if (finalEndColIdx > currentGroupStart) {
                 sheet.addMergedRegion(new CellRangeAddress(0, 0, currentGroupStart, finalEndColIdx));
             }
         }
-
         // 5. 说明文字填充与合并
         int tipMergeEnd = Math.max(10, startCol + headers.size() - 1);
         XSSFCell cell52 = headerRows[5].createCell(2);
@@ -169,24 +162,20 @@ public class ExcelTemplateHelper {
      */
     public static void fillRowData(XSSFRow row, RowDataDTO rowData, int startCol, List<HeaderDataDTO> headers, Map<String, String> errorMap) {
         XSSFSheet sheet = (XSSFSheet) row.getSheet();
-
         // 填充学号列
         XSSFCell numCell = row.createCell(0);
         numCell.setCellValue(rowData.getStudentNumber());
         if (errorMap != null && errorMap.containsKey("number")) {
             addComment(sheet, numCell, errorMap.get("number"));
         }
-
         // 填充姓名列
         row.createCell(1).setCellValue(rowData.getStudentName());
-
         // 循环填充成绩动态列
         for (int j = 0; j < headers.size(); j++) {
             Long planId = headers.get(j).getPlanId();
             String scoreVal = rowData.getScores().get(planId);
             XSSFCell scoreCell = row.createCell(startCol + j);
             scoreCell.setCellValue(scoreVal == null ? "" : scoreVal);
-
             // 检查该计划是否有错，若有则添加批注
             if (errorMap != null && errorMap.containsKey(planId.toString())) {
                 addComment(sheet, scoreCell, errorMap.get(planId.toString()));

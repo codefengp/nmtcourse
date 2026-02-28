@@ -117,6 +117,7 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
     }
 
     /**
+     * 【第一阶段：下载模板】
      * 1.准备表头数据、所有业务数据
      * 2.渲染模板
      * 3.导出模板
@@ -131,7 +132,8 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
         Long classId = bizParams.getLong("classId");
         Long courseId = bizParams.getLong("courseId");
         // 1.准备表头数据、所有业务数据
-        TemplateDataDTO templateData = this.prepareTemplateData(classId, courseId);
+        TemplateDataDTO templateData = new TemplateDataDTO(this.getHeaderDataDTOS(courseId)
+                , this.getRowDataDTOS(classId));
         try (InputStream ins = ResourceUtil.getStream("template/achievement.xlsx");
              XSSFWorkbook work = new XSSFWorkbook(ins)) {
             // 2. 渲染模板
@@ -145,15 +147,11 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
     }
 
     /**
-     * 准备表头数据、所有业务数据
-     * 1.查询表头数据(考核方式、考核内容、课程目标、总分)
-     * 2.查询学生成绩数据
-     * @param classId
+     * 查询表头数据(考核方式、考核内容、课程目标、总分)
      * @param courseId
      * @return
      */
-    private TemplateDataDTO prepareTemplateData(Long classId, Long courseId) {
-        // 1. 获取表头数据
+    private List<HeaderDataDTO> getHeaderDataDTOS(Long courseId) {
         // 转换列 DTO
         List<EvaluatePlanExDO> plans = evaluatePlanService.listEvaluatePlan(courseId);
         // 严格按顺序转换为 HeaderDataDTO
@@ -167,12 +165,18 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
             dto.setScore(p.getScore().toString());
             headers.add(dto); // 这里的 List 会保持 SQL 的原始顺序
         }
+        return headers;
+    }
 
-        // 2.查询学生成绩数据
+    /**
+     * 查询学生成绩数据
+     * @param classId
+     * @return
+     */
+    private List<RowDataDTO> getRowDataDTOS(Long classId) {
         // 转换行 DTO (使用 LinkedHashMap 保持数据库查询顺序)
         List<StudentAchievementPlanDO> achievements = studentAchievementMapper.listStudentWithAchievement(classId);
         Map<Long, RowDataDTO> studentMap = new LinkedHashMap<>();
-
         for (StudentAchievementPlanDO sa : achievements) {
             //判断studentId 是否存在
             RowDataDTO row = studentMap.computeIfAbsent(sa.getStudentId(), k -> {
@@ -188,13 +192,14 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
                 row.getScores().put(sa.getPlanId(), sa.getScore() != null ? sa.getScore().toString() : "");
             }
         }
-        return new TemplateDataDTO(headers, new ArrayList<>(studentMap.values()));
+        return new ArrayList<>(studentMap.values());
     }
 
     /**
-     * 验证导入数据
-     *  1.获取表格数据
-     *  2.验证表格数据
+     * 【第二阶段：验证导入数据】
+     *  1.查询数据库已有学生信息数据、考核计划数据
+     *  2.获取导入表格数据
+     *  3.数据校验判断
      * @param file
      * @param params
      * @return
@@ -205,7 +210,7 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
         JSONObject bizParams = this.getBizParams(params);
         Long classId = bizParams.getLong("classId");
         Long courseId = bizParams.getLong("courseId");
-        // 1. 准备校验上下文 (Context)
+        // 1. 查询数据库已有学生信息数据、考核计划数据
         List<ClassStudentDO> studentList = classStudentService.listClassStudent(classId);
         Map<String, ClassStudentDO> stuMap = studentList.stream()
                 .collect(Collectors.toMap(s -> s.getNumber() + s.getName(), s -> s, (v1, v2) -> v1));
@@ -214,10 +219,10 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
         Map<Long, BigDecimal> planMap = plans.stream()
                 .collect(Collectors.toMap(EvaluatePlanExDO::getId, EvaluatePlanExDO::getScore));
 
-        // 2. 解析数据 (第一步：获取数据)
-        List<ImportRowDTO> allRows = parseExcelToImportDTOs(file);
+        // 2.获取导入表格数据
+        List<ImportRowDTO> allRows = parseExcelToImportDTOs(file,6,4);
 
-        // 3. 执行校验 (第二步：验证数据)
+        // 3.数据校验判断
         List<ImportRowDTO> successData = new ArrayList<>();
         List<ImportRowDTO> failData = new ArrayList<>();
 
@@ -239,12 +244,14 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
     }
 
     /**
-     * 解析 excel导入数据,并转成dto格式
+     * 解析 excel导入业务数据,并转成dto格式
      * @param file
+     * @param headerCursor 表头行数
+     * @param hideRowIndex 隐藏行
      * @return
      * @throws IOException
      */
-    private List<ImportRowDTO> parseExcelToImportDTOs(MultipartFile file) throws IOException {
+    private List<ImportRowDTO> parseExcelToImportDTOs(MultipartFile file,int headerCursor,int hideRowIndex) throws IOException {
         String sourceFileName = file.getOriginalFilename();
         if(sourceFileName.endsWith(".xls")){
             throw ServiceExceptionUtil.invalidParamException("导入文件格式xls与模版格式xlsx不匹配，请重新下载模版导入");
@@ -252,20 +259,23 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
         List<ImportRowDTO> list = new ArrayList<>();
         try (InputStream is = file.getInputStream(); Workbook wk = new XSSFWorkbook(is)) {
             Sheet sheet = wk.getSheetAt(0);
-            Row hideRow = sheet.getRow(4); // 隐藏行 planId
+            Row hideRow = sheet.getRow(hideRowIndex); // 隐藏行 planId
 
-            for (int i = 6; i <= sheet.getLastRowNum(); i++) {
+            for (int i = headerCursor; i <= sheet.getLastRowNum(); i++) {
                 Row r = sheet.getRow(i);
+                //判断是否空行
                 if (r == null || ExcelTemplateHelper.isRowEmpty(r)) continue;
 
                 ImportRowDTO dto = new ImportRowDTO();
-                dto.setRowIndex(i + 1);
+                dto.setRowIndex(i + 1);//行号
+                //学号、姓名
                 dto.setStudentNumber(ExcelTemplateHelper.getCellValue(r.getCell(0)));
                 dto.setStudentName(ExcelTemplateHelper.getCellValue(r.getCell(1)));
-
+                //成绩
                 for (int j = 2; j < hideRow.getLastCellNum(); j++) {
                     String planIdStr = ExcelTemplateHelper.getCellValue(hideRow.getCell(j));
                     if (ExcelTemplateHelper.isNumeric(planIdStr)) {
+                        //属性scores为Map类型 -> K: planId, V: score
                         dto.getScores().put(Long.valueOf(planIdStr), ExcelTemplateHelper.getCellValue(r.getCell(j)));
                     }
                 }
@@ -277,23 +287,24 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
 
     /**
      * 核心业务校验逻辑
+     *  1. 验证学生是否存在
+     *  2. 验证每一项成绩在0到总分之间
      * @param row 待校验的数据行
-     * @param stuMap 学生索引上下文
-     * @param planMap 考核计划分值上限上下文
+     * @param stuMap 学生信息 k: number + name v: student
+     * @param planMap 考核计划分值 k: planId v: 总分score
      */
     private void doBusinessValidate(ImportRowDTO row, Map<String, ClassStudentDO> stuMap, Map<Long, BigDecimal> planMap) {
         // 1. 验证学生是否存在
         String stuKey = row.getStudentNumber() + row.getStudentName();
         ClassStudentDO stu = stuMap.get(stuKey);
-
         if (stu == null) {
             row.addError("student", "该学生不属于当前班级，请检查学号和姓名");
         } else {
             row.setStudentId(stu.getId());
         }
-
-        // 2. 验证每一项成绩
+        // 2. 验证每一项成绩在0到总分之间
         row.getScores().forEach((planId, scoreStr) -> {
+            // 考核计划总分
             BigDecimal maxScore = planMap.get(planId);
             if (!StringUtils.hasText(scoreStr) || !ExcelTemplateHelper.isNumeric(scoreStr)) {
                 row.addError(planId.toString(), "成绩必须为有效数字");
@@ -307,57 +318,46 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
     }
 
     /**
-     * 导出错误
-     *  1.获取导入数据、参数
+     * 【第三阶段：导出错误】
+     *  1.获取表头元数据
      *  2.渲染表格
-     *      2.1 设置表头内容
-     *      2.2 设置验证错误行内容
-     *      2.3 设置错误批注
-     *      2.4 分割行标识
-     *      2.5 设置验证正确数据
-     *  3.导出错误模板
+     *  3.导出错误信息
      * @param response
      * @param params
      * @throws IOException
      */
     @Override
     public void outFail(HttpServletResponse response, JSONObject params) throws IOException {
-        // 调用通用校验方法
+        // 获取参数内容
         JSONObject bizParams = this.getBizParams(params);
-        Long classId = bizParams.getLong("courseId");
         Long courseId = bizParams.getLong("courseId");
         List<ImportRowDTO> successData = params.getJSONArray("successData").toJavaList(ImportRowDTO.class);
         List<ImportRowDTO> failData = params.getJSONArray("failData").toJavaList(ImportRowDTO.class);
-
-        // 3. 获取表头元数据
-        TemplateDataDTO templateData = this.prepareTemplateData(classId, courseId);
-
-        // 4. 执行渲染
+        // 1. 获取表头元数据
+        List<HeaderDataDTO> headers = this.getHeaderDataDTOS(courseId);
+        // 2. 渲染表格
         try (InputStream ins = ResourceUtil.getStream("template/achievement.xlsx");
              XSSFWorkbook work = new XSSFWorkbook(ins)) {
-
             // 调用 Helper 中专门为失败设计的渲染入口
-            ExcelTemplateHelper.renderFail(work, templateData, 6,failData, successData);
-
-            // 5. 导出
-            ExcelUtils.write(response, "成绩导入错误核对表.xlsx");
+            ExcelTemplateHelper.renderFail(work, headers, 6,failData, successData);
+            // 3. 导出错误信息
+            ExcelUtils.write(response, "成绩导入错误表.xlsx");
             work.write(response.getOutputStream());
         }
     }
 
     /**
-     * 导入数据
-     *  1.获取导入数据、参数
-     *  2.获取所有考核计划数据
-     *  3.获取数据库已有成绩数据
-     *  4.获取表格所有考核计划成绩
-     *      4.1.判断成绩是否已存在，存在则更新，不存在则新增--通过studentId、planId判断
-     *  5.导入数据 -> 更新/新增
+     * 【第四阶段：导入数据】
+     *  1.查询数据库学生已有成绩
+     *  2.设置导入数据集合(判断是否已有学生成绩数据，无则新增、有则更新)
+     *      2.1 如果是新增，初始化基础信息
+     *      2.2 设置成绩
+     *  3.批量执行更新/新增
      * @param params
      */
     @Override
     public void importExcel(JSONObject params) {
-        // 调用通用校验方法
+        // 获取参数
         JSONObject bizParams = this.getBizParams(params);
         Long classId = bizParams.getLong("classId");
         Long courseId = bizParams.getLong("courseId");
@@ -366,11 +366,10 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
         if (CollectionUtils.isEmpty(successData)) {
             throw ServiceExceptionUtil.invalidParamException("没有可导入的有效数据");
         }
-
-        // 2. 获取所有考核计划元数据
+        // 获取所有考核计划元数据
         List<EvaluatePlanExDO> planList = evaluatePlanService.listEvaluatePlan(courseId);
 
-        // 3. 性能优化：预处理数据库已有成绩
+        // 1. 查询数据库学生已有成绩
         // 将已有成绩转为 Map，Key 为 "studentId_planId"，实现 O(1) 级别的快速查找
         List<StudentAchievementDO> existAchievementList = studentAchievementMapper.listStudentAchievement(classId);
         Map<String, StudentAchievementDO> existMap = existAchievementList.stream()
@@ -379,38 +378,35 @@ public class StudentAchievementServiceImpl implements StudentAchievementService 
                         e -> e,
                         (v1, v2) -> v1 // 防重处理
                 ));
-        // 4. 构建待入库的列表
-        List<StudentAchievementDO> resultList = new ArrayList<>();
 
+        // 2. 设置导入数据集合(判断是否已有学生成绩数据，无则新增、有则更新)
+        List<StudentAchievementDO> resultList = new ArrayList<>();
         for (ImportRowDTO rowDto : successData) {
             Long studentId = rowDto.getStudentId();
             for (EvaluatePlanExDO plan : planList) {
                 Long planId = plan.getId();
                 String key = studentId + "_" + planId;
-                // 4.1 判断是更新还是新增
+                // 判断是更新还是新增
                 StudentAchievementDO achievementDO = existMap.getOrDefault(key, new StudentAchievementDO());
-                // 如果是新增，初始化基础信息
+                // 2.1 如果是新增，初始化基础信息
                 if (achievementDO.getId() == null) {
                     achievementDO.setStudentId(studentId);
                     achievementDO.setPlanId(planId);
                     achievementDO.setObjectiveId(plan.getObjectiveId());
                     achievementDO.setModeId(plan.getModeId());
                 }
-                // 4.2 从 DTO 的 Scores Map 中获取对应计划的成绩
+                // 2.2 设置成绩
                 String scoreStr = rowDto.getScores().get(planId);
                 if (!StringUtils.hasText(scoreStr)) {
                     // 如果在第二阶段校验得当，这里通常不会报错，但为了健壮性保留异常
                     throw ServiceExceptionUtil.invalidParamException("学号 [" + rowDto.getStudentNumber() + "] 缺少考核项 [" + plan.getContent() + "] 的成绩");
                 }
-
                 // 格式化成绩：两位小数，直接截取（向下取整）
                 achievementDO.setScore(new BigDecimal(scoreStr).setScale(2, RoundingMode.DOWN));
-
                 resultList.add(achievementDO);
             }
         }
-        // 5. 批量执行更新/新增
-        // 注意：这里的 insertOrUpdate 需要在 MyBatis 中使用 ON DUPLICATE KEY UPDATE 或相关批量语法
+        // 3. 批量执行更新/新增
         if (!resultList.isEmpty()) {
             studentAchievementMapper.insertOrUpdate(resultList);
         }
