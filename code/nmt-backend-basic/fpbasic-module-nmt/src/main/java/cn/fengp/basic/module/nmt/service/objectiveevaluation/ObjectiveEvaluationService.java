@@ -59,4 +59,18 @@ public interface ObjectiveEvaluationService {
      */
     PageResult<ObjectiveEvaluationDO> getObjectiveEvaluationPage(ObjectiveEvaluationPageReqVO pageReqVO);
 
+    /**
+     * 批量创建/更新课程目标达成度评价
+     *
+     * @param list 批量创建信息
+     */
+    int saveOrUpdateObjectiveEvaluationBatch(List<ObjectiveEvaluationDO> list);
+
+    /**
+     * 根据父id达成度评价获取课程目标达成度评价
+     * @param id 父id达成度评价
+     * @return 课程目标达成度评价
+     */
+    List<ObjectiveEvaluationDO> getByAchievementEvaluation(Long id);
+
 }

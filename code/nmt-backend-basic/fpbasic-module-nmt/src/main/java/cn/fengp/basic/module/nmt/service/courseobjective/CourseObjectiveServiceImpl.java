@@ -82,6 +82,11 @@ public class CourseObjectiveServiceImpl implements CourseObjectiveService {
     }
 
     @Override
+    public List<CourseObjectiveDO> getCourseObjectiveByIds(List<Long> ids) {
+        return courseObjectiveMapper.selectByIds(ids);
+    }
+
+    @Override
     public PageResult<CourseObjectiveDO> getCourseObjectivePage(CourseObjectivePageReqVO pageReqVO) {
         return courseObjectiveMapper.selectPage(pageReqVO);
     }

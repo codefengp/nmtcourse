@@ -46,6 +46,13 @@ public class AchievementEvaluationController {
         return success(achievementEvaluationService.createAchievementEvaluation(createReqVO));
     }
 
+    @PostMapping("/save")
+    @Operation(summary = "保存达成度评价")
+    @PreAuthorize("@ss.hasPermission('nmt:achievement-evaluation:create')")
+    public CommonResult<Long> saveAchievementEvaluation(@Valid @RequestBody AchievementEvaluationSaveExReqVO createReqVO) {
+        return success(achievementEvaluationService.saveAchievementEvaluation(createReqVO));
+    }
+
     @PutMapping("/update")
     @Operation(summary = "更新达成度评价")
     @PreAuthorize("@ss.hasPermission('nmt:achievement-evaluation:update')")

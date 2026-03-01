@@ -10,7 +10,7 @@
         left join nmt_course_objective nco on nom.objective_id = nco.id
         left join nmt_evaluate_mode nem on nom.mode_id = nem.id
         where nom.course_id = #{courseId} and nom.score != 0 and nom.deleted = 0
-        order by nom.mode_id,nom.objective_id,COALESCE(nep.content, '')
+        order by nom.objective_id,nom.mode_id,COALESCE(nep.content, '')
     </select>
 
 </mapper>

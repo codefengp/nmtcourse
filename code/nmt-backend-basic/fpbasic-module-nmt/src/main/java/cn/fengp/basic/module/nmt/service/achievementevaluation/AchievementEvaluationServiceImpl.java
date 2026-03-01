@@ -1,20 +1,28 @@
 package cn.fengp.basic.module.nmt.service.achievementevaluation;
 
 import cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil;
+import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.fengp.basic.module.nmt.dal.dataobject.courseobjective.CourseObjectiveDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.evaluatemode.EvaluateModeDO;
+import cn.fengp.basic.module.nmt.dal.dataobject.objectiveevaluation.ObjectiveEvaluationDO;
+import cn.fengp.basic.module.nmt.service.courseobjective.CourseObjectiveService;
 import cn.fengp.basic.module.nmt.service.evaluatemode.EvaluateModeService;
+import cn.fengp.basic.module.nmt.service.objectiveevaluation.ObjectiveEvaluationService;
 import cn.hutool.core.collection.CollUtil;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import cn.fengp.basic.module.nmt.controller.admin.achievementevaluation.vo.*;
@@ -43,6 +51,10 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
     private AchievementEvaluationMapper achievementEvaluationMapper;
     @Resource
     private EvaluateModeService evaluateModeService;
+    @Resource
+    private ObjectiveEvaluationService objectiveEvaluationService;
+    @Resource
+    private CourseObjectiveService courseObjectiveService;
 
     @Override
     public Long createAchievementEvaluation(AchievementEvaluationSaveReqVO createReqVO) {
@@ -92,6 +104,71 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
     @Override
     public PageResult<AchievementEvaluationDO> getAchievementEvaluationPage(AchievementEvaluationPageReqVO pageReqVO) {
         return achievementEvaluationMapper.selectPage(pageReqVO);
+    }
+
+    /**
+     * 判断新增或者更新
+     * 1.新增
+     *  1.1新增达成度评价
+     *  1.2新增课程目标达成度评价
+     * 2.更新
+     *  2.1更新达成度评价
+     *  2.2更新课程目标达成度评价
+     * @param createReqVO
+     * @return
+     */
+    @Override
+    public Long saveAchievementEvaluation(AchievementEvaluationSaveExReqVO createReqVO) {
+        //判断参数
+        String objectiveEvaluations = createReqVO.getObjectiveEvaluations();
+        if(!StringUtils.hasText(objectiveEvaluations)){
+            throw ServiceExceptionUtil.invalidParamException("课程目标达成度评价不能为空");
+        }
+        //解析课程目标达成度评价
+        JSONObject objEvaluations = JSON.parseObject(objectiveEvaluations);
+        AchievementEvaluationDO achievementEvaluation = BeanUtils.toBean(createReqVO, AchievementEvaluationDO.class);
+        //1.新增
+        if(Objects.isNull(achievementEvaluation.getId())){
+            // 1.1 新增达成度评价
+            achievementEvaluationMapper.insert(achievementEvaluation);
+            // 1.2 新增课程目标达成度评价
+            List<ObjectiveEvaluationDO> objectiveEvaluationDOS = new ArrayList<>();
+            // 查出所有key的课程目标
+            List<Long> objectIds = objEvaluations.keySet().stream().map(Long::valueOf).collect(Collectors.toList());
+            Map<Long, CourseObjectiveDO> objectiveDOMap = courseObjectiveService.getCourseObjectiveByIds(objectIds).stream().collect(Collectors.toMap(CourseObjectiveDO::getId, Function.identity()));
+            // 新增目标达成度集合数据
+            objEvaluations.forEach((key,value) -> {
+                ObjectiveEvaluationDO oeDo = new ObjectiveEvaluationDO();
+                oeDo.setEvaluationId(achievementEvaluation.getId());//达成度评价
+                oeDo.setObjectiveId(Long.valueOf(key));//课程目标
+                CourseObjectiveDO objective = objectiveDOMap.get(Long.valueOf(key));
+                oeDo.setObjectiveName(objective.getName());//课程目标名称
+                oeDo.setObjectiveContent(objective.getContent());//课程目标内容
+                oeDo.setComment(value.toString());//课程目标评价内容
+                objectiveEvaluationDOS.add(oeDo);
+            });
+            if(!CollectionUtils.isEmpty(objectiveEvaluationDOS)){
+                objectiveEvaluationService.saveOrUpdateObjectiveEvaluationBatch(objectiveEvaluationDOS);
+            }
+        }else {
+            //2.更新
+            // 2.1 更新达成度评价
+            achievementEvaluationMapper.updateById(achievementEvaluation);
+            // 2.2 更新课程目标达成度评价
+            List<ObjectiveEvaluationDO> existAchievementEvaluations = objectiveEvaluationService.getByAchievementEvaluation(achievementEvaluation.getId());
+            for (ObjectiveEvaluationDO existDO : existAchievementEvaluations) {
+                //更新课程目标评价内容
+                Object comment = objEvaluations.get(existDO.getObjectiveId().toString());
+                if(Objects.nonNull(comment)){
+                    existDO.setComment(comment.toString());
+                }
+            }
+            if(!CollectionUtils.isEmpty(existAchievementEvaluations)){
+                objectiveEvaluationService.saveOrUpdateObjectiveEvaluationBatch(existAchievementEvaluations);
+            }
+        }
+        // 返回
+        return achievementEvaluation.getId();
     }
 
     /**
@@ -167,6 +244,7 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
      *      -->CO_j = Σ( AvgScore(j,i) ÷ DesignScore(j,i) × Wi )
      *  3.总体课程目标达成度
      *      总体课程目标达成度 = 求和(矩阵内容平均分/矩阵内容分数 x 对应考核方式权重)
+     *  4.报告评价内容
      * @param courseId
      * @param classId
      * @return
@@ -186,12 +264,20 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
         }
         //2.学生课程目标达成度
         List<JSONObject> stuObjRateList = this.calculateStuObjAcheRate(stuObjModeScoreList);
+        //3.总体课程目标达成度
         List<JSONObject> courseObjRateList = this.calculateCourseObjAcheRate(stuObjModeScoreList);
+        //4.报告评价内容
+        LambdaQueryWrapperX<AchievementEvaluationDO> wrapperX = new LambdaQueryWrapperX<>();
+        wrapperX.eq(AchievementEvaluationDO::getCourseId, courseId).eq(AchievementEvaluationDO::getClassId, classId);
+        AchievementEvaluationDO achievementEvaluationDO = achievementEvaluationMapper.selectOne(wrapperX);
+
         JSONObject evaluation = new JSONObject();
         evaluation.put("stuObjRateList",stuObjRateList);
         evaluation.put("courseObjRateList",courseObjRateList);
+        evaluation.put("achiEval",achievementEvaluationDO);
         return evaluation;
     }
+
 
     /**
      * 计算学生课程目标达成度

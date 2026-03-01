@@ -2,13 +2,17 @@ import request from '@/config/axios'
 
 /** 达成度评价信息 */
 export interface AchievementEvaluation {
-          id: number; // 主键
+          id?: number; // 主键
           courseId?: number; // 课程ID
           classId?: number; // 教学班级ID
           overallComment: string; // 学生总体评价
           problemAnalysis: string; // 存在问题
           improvementPlan: string; // 课程改进
   }
+
+export interface AchievementEvaluationEx extends AchievementEvaluation {
+  objectiveEvaluations: string; // 课程目标分析
+}
 
 // 达成度评价 API
 export const AchievementEvaluationApi = {
@@ -55,5 +59,10 @@ export const AchievementEvaluationApi = {
   // 查询课程目标达成评价结果
   getObjectiveAchievementEvaluation: async (courseId: number,classId:number) => {
     return await request.get({ url: `/nmt/achievement-evaluation/get-obj-ache-eval?courseId=` + courseId + `&classId=` + classId })
+  },
+
+  // 新增/更新达成度评价详情
+  saveAchievementEvaluation: async (data: AchievementEvaluationEx) => {
+    return await request.post({ url: `/nmt/achievement-evaluation/save`, data })
   },
 }

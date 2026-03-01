@@ -53,6 +53,14 @@ public interface CourseObjectiveService {
     CourseObjectiveDO getCourseObjective(Long id);
 
     /**
+     * 获得课程目标集合
+     *
+     * @param ids 编号集合
+     * @return 课程目标
+     */
+    List<CourseObjectiveDO> getCourseObjectiveByIds(List<Long> ids);
+
+    /**
      * 获得课程目标分页
      *
      * @param pageReqVO 分页查询

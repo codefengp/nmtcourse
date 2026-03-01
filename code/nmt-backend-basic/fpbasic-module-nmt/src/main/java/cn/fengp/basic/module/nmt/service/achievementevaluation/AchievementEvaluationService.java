@@ -64,4 +64,6 @@ public interface AchievementEvaluationService {
     JSONObject getCourseOverallScore(Long courseId, Long classId);
 
     JSONObject getObjectiveAchievementEvaluation(Long courseId, Long classId);
+
+    Long saveAchievementEvaluation(AchievementEvaluationSaveExReqVO createReqVO);
 }

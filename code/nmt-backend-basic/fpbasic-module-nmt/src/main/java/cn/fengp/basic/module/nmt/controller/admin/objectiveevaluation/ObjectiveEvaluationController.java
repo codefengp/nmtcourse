@@ -101,4 +101,13 @@ public class ObjectiveEvaluationController {
                         BeanUtils.toBean(list, ObjectiveEvaluationRespVO.class));
     }
 
+    @GetMapping("/get-by-achi")
+    @Operation(summary = "获得课程目标达成度评价集合")
+    @Parameter(name = "id", description = "达成度编号", required = true, example = "1024")
+    @PreAuthorize("@ss.hasPermission('nmt:objective-evaluation:query')")
+    public CommonResult<List<ObjectiveEvaluationRespVO>> getByAchievementEvaluation(@RequestParam("id") Long id) {
+        List<ObjectiveEvaluationDO> byAchievementEvaluations = objectiveEvaluationService.getByAchievementEvaluation(id);
+        return success(BeanUtils.toBean(byAchievementEvaluations, ObjectiveEvaluationRespVO.class));
+    }
+
 }

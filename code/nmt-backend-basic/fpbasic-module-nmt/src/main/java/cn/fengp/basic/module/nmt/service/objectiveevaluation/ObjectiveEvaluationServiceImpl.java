@@ -1,8 +1,11 @@
 package cn.fengp.basic.module.nmt.service.objectiveevaluation;
 
+import cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil;
+import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.hutool.core.collection.CollUtil;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
+import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +43,22 @@ public class ObjectiveEvaluationServiceImpl implements ObjectiveEvaluationServic
 
         // 返回
         return objectiveEvaluation.getId();
+    }
+
+    public int saveOrUpdateObjectiveEvaluationBatch(List<ObjectiveEvaluationDO> list) {
+        if(CollectionUtils.isEmpty(list)){
+            throw ServiceExceptionUtil.invalidParamException("课程目标达成度评价集合不能为空");
+        }
+        objectiveEvaluationMapper.insertOrUpdate(list);
+        // 返回
+        return list.size();
+    }
+
+    @Override
+    public List<ObjectiveEvaluationDO> getByAchievementEvaluation(Long id) {
+        LambdaQueryWrapperX<ObjectiveEvaluationDO> wrapperX = new LambdaQueryWrapperX<>();
+        wrapperX.eq(ObjectiveEvaluationDO::getEvaluationId, id);
+        return objectiveEvaluationMapper.selectList(wrapperX);
     }
 
     @Override
