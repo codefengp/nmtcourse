@@ -1,5 +1,6 @@
 package cn.fengp.basic.module.nmt.service.achievementevaluation;
 
+import java.io.IOException;
 import java.util.*;
 
 import com.alibaba.fastjson.JSONObject;
@@ -66,4 +67,6 @@ public interface AchievementEvaluationService {
     JSONObject getObjectiveAchievementEvaluation(Long courseId, Long classId);
 
     Long saveAchievementEvaluation(AchievementEvaluationSaveExReqVO createReqVO);
+
+    void exportReport(Long courseId, Long classId) throws IOException;
 }

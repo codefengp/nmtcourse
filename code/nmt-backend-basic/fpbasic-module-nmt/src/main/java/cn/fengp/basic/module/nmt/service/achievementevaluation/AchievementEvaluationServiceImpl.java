@@ -1,17 +1,28 @@
 package cn.fengp.basic.module.nmt.service.achievementevaluation;
 
 import cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil;
+import cn.fengp.basic.framework.dict.core.DictFrameworkUtils;
+import cn.fengp.basic.framework.excel.core.util.ExcelUtils;
 import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.fengp.basic.module.nmt.dal.dataobject.courseinfo.CourseInfoDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.courseobjective.CourseObjectiveDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.evaluatemode.EvaluateModeDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.objectiveevaluation.ObjectiveEvaluationDO;
+import cn.fengp.basic.module.nmt.dal.dataobject.teachclass.TeachClassDO;
+import cn.fengp.basic.module.nmt.service.achievementevaluation.word.WordTemplateHelper;
+import cn.fengp.basic.module.nmt.service.courseinfo.CourseInfoService;
 import cn.fengp.basic.module.nmt.service.courseobjective.CourseObjectiveService;
 import cn.fengp.basic.module.nmt.service.evaluatemode.EvaluateModeService;
 import cn.fengp.basic.module.nmt.service.objectiveevaluation.ObjectiveEvaluationService;
+import cn.fengp.basic.module.nmt.service.studentachievement.excel.ExcelTemplateHelper;
+import cn.fengp.basic.module.nmt.service.teachclass.TeachClassService;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.resource.ResourceUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.ibatis.annotations.Param;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
 import org.springframework.util.CollectionUtils;
@@ -19,8 +30,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -55,6 +70,10 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
     private ObjectiveEvaluationService objectiveEvaluationService;
     @Resource
     private CourseObjectiveService courseObjectiveService;
+    @Resource
+    private CourseInfoService courseInfoService;
+    @Resource
+    private TeachClassService teachClassService;
 
     @Override
     public Long createAchievementEvaluation(AchievementEvaluationSaveReqVO createReqVO) {
@@ -169,6 +188,82 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
         }
         // 返回
         return achievementEvaluation.getId();
+    }
+
+    /**
+     * 导出达成度评价报告
+     *   1.填充课程基本信息(属性信息、总评成绩)
+     * @param courseId
+     * @param classId
+     */
+    @Override
+    public void exportReport(Long courseId, Long classId) throws IOException {
+        String filePath = "template/course_report_temp.docx";
+        // 1.填充课程基本信息(属性信息、总评成绩)
+        this.writeReportBasicData(courseId,classId, filePath);
+    }
+
+    /**
+     * 填充课程基本信息(属性信息、总评成绩)
+     *  1.获取课程信息、教学班级信息、获取课程总评成绩
+     *  2.map映射word字段
+     *  3.word填充数据
+     * @param courseId
+     * @param classId
+     * @param filePath
+     */
+    private void writeReportBasicData(Long courseId, Long classId, String filePath) throws IOException {
+        //1.获取课程信息、教学班级信息、获取课程总评成绩
+        CourseInfoDO courseInfo = courseInfoService.getCourseInfo(courseId);
+        TeachClassDO teachClass = teachClassService.getTeachClass(classId);
+        //学期，课程类型
+        Integer term = courseInfo.getTerm();
+        Integer courseType = courseInfo.getCourseType();
+        String termLabel = DictFrameworkUtils.parseDictDataLabel("nmt_term", term);
+        String courseTypeLabel = DictFrameworkUtils.parseDictDataLabel("nmt_course_type", courseType);
+        //考核方式名称
+        List<EvaluateModeDO> evaluateModeDOS = evaluateModeService.listEvaluateMode(courseId);
+        String modeName = evaluateModeDOS.stream()
+                .map(EvaluateModeDO::getName) // 提取 name 字段
+                .collect(Collectors.joining("、")); // 使用 、符号拼接
+        //报告日期
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月dd日"); // 设置日期格式
+        String analysisDate = sdf.format(new Date()); // 格式化日期
+        //成绩最值，分数段占比、人数
+        JSONObject overallScore = getCourseOverallScore(courseId, classId);
+
+        //2.map映射word字段
+        Map<String, String> content = new HashMap<>();
+        content.put("{{course_name_title}}", courseInfo.getName());
+        content.put("{{termInfo}}", courseInfo.getGrade() + "级 " + termLabel);
+        content.put("{{course_name}}", courseInfo.getName());
+        content.put("{{mode_name}}", modeName);
+        content.put("{{character_}}", courseTypeLabel);
+        content.put("{{class_name}}", teachClass.getName());
+        content.put("{{student_count}}", String.valueOf(teachClass.getTotalNumber()));
+        //成绩最值
+        content.put("{{maxscore}}", overallScore.getString("max"));
+        content.put("{{minscore}}", overallScore.getString("min"));
+        content.put("{{avgscore}}", overallScore.getString("avg"));
+        //分数段占比
+        content.put("{{excellent_p}}", overallScore.getString("90-100"));
+        content.put("{{good_p}}", overallScore.getString("80-89"));
+        content.put("{{middle_p}}", overallScore.getString("70-79"));
+        content.put("{{pass_p}}", overallScore.getString("60-69"));
+        content.put("{{fail_p}}", overallScore.getString("≤59"));
+        //分数段人数
+        content.put("{{excellent_c}}", overallScore.getString("count90"));
+        content.put("{{good_c}}", overallScore.getString("count80"));
+        content.put("{{middle_c}}", overallScore.getString("count70"));
+        content.put("{{pass_c}}", overallScore.getString("count60"));
+        content.put("{{fail_c}}", overallScore.getString("count59"));
+        content.put("{{analysisDate}}", analysisDate);
+
+        //3.word填充数据
+        try (InputStream in = ResourceUtil.getStream(filePath);
+             XWPFDocument document = new XWPFDocument(in)) {
+            WordTemplateHelper.replaceWordContent(document, content);
+        }
     }
 
     /**
@@ -418,7 +513,7 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
     }
 
     /**
-     * 计算分数段人数占比
+     * 计算分数段人数占比/人数
      * @param scores
      * @param result
      * @return
@@ -440,11 +535,18 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
         long count70 = scores.stream().filter(s -> s.compareTo(BigDecimal.valueOf(70)) >= 0 && s.compareTo(BigDecimal.valueOf(80)) < 0).count();
         long count60 = scores.stream().filter(s -> s.compareTo(BigDecimal.valueOf(60)) >= 0 && s.compareTo(BigDecimal.valueOf(70)) < 0).count();
         long count59 = scores.stream().filter(s -> s.compareTo(BigDecimal.valueOf(60)) < 0).count();
+        //占比
         result.put("90-100", formatRate(count90, total));
         result.put("80-89", formatRate(count80, total));
         result.put("70-79", formatRate(count70, total));
         result.put("60-69", formatRate(count60, total));
         result.put("≤59", formatRate(count59, total));
+        //人数
+        result.put("count90", (int)count90);
+        result.put("count80", (int)count80);
+        result.put("count70", (int)count70);
+        result.put("count60", (int)count60);
+        result.put("count59", (int)count59);
         return result;
     }
 

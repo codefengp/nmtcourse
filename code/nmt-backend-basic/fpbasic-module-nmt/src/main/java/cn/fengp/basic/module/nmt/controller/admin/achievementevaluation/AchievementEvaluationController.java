@@ -124,4 +124,11 @@ public class AchievementEvaluationController {
         JSONObject objAcheEval = achievementEvaluationService.getObjectiveAchievementEvaluation(courseId, classId);
         return success(objAcheEval);
     }
+
+    @GetMapping("/export-report")
+    @Operation(summary = "导出达成度评价报告")
+    @PreAuthorize("@ss.hasPermission('nmt:achievement-evaluation:query')")
+    public void exportReport(@RequestParam(name = "courseId") Long courseId, @RequestParam(name = "classId") Long classId) throws IOException {
+        achievementEvaluationService.exportReport(courseId, classId);
+    }
 }
