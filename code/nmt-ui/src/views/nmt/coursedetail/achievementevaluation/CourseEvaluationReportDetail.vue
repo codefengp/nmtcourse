@@ -84,7 +84,7 @@
             <div class="section">
                 <div class="hd"><i class="tag"></i>学生总体达成情况评价</div>
                 <div class="bd">
-                    <Echart :options="overallChartOption" height="450px" v-if="overallChartOption.xAxis" />
+                    <Echart ref="overallChartRef" :options="overallChartOption" height="450px" v-if="overallChartOption.xAxis" />
                     <el-input
                             type="textarea"
                             v-model="overallComment"
@@ -158,14 +158,15 @@ import {AchievementEvaluationApi, AchievementEvaluationEx} from '@/api/nmt/achie
 import { getDictLabel, DICT_TYPE } from "@/utils/dict"
 import { ElMessage } from 'element-plus'
 import {ObjectiveEvaluationApi} from "@/api/nmt/objectiveevaluation";
+import download from "@/utils/download";
 
 const emit = defineEmits(['back'])
 const props = defineProps<{ courseId: number; classId: number }>()
 const loading = ref(false)
-const isEdit = ref(false) // 需求4：控制编辑状态
+const isEdit = ref(false)
 
 // 业务变量
-const reportId = ref<number>() // 存储后端主键ID
+const reportId = ref<number>()
 const courseDetail = ref<any>({})
 const teachClassDetail = ref<any>({ className: '', totalNumber: 0 })
 const scoreStats = reactive({ maxScore: '0.00', minScore: '0.00', avgScore: '0.00' })
@@ -176,219 +177,268 @@ const rawStuObjRateList = ref<any[]>([])
 const uniqueObjectives = ref<any[]>([])
 const overallChartOption = ref<any>({})
 
-// 输入框对应字段 (适配后端对象 AchievementEvaluationEx)
-const overallComment = ref('') // 总体评价
-const problemAnalysis = ref('') // 存在问题
-const improvementPlan = ref('') // 持续改进
-const individualAnalysis = reactive<Record<string, string>>({}) // 个体目标分析Map
+// 输入框对应字段
+const overallComment = ref('')
+const problemAnalysis = ref('')
+const improvementPlan = ref('')
+const individualAnalysis = reactive<Record<string, string>>({})
 
 const onlyShowUnreached = ref(false)
 const scatterRefs = reactive<Record<string, any>>({})
-let scatterInstances: echarts.ECharts[] = []
+
+// --- 关键修改：定义引用变量 ---
+const overallChartRef = ref<any>(null) // 总体图组件引用
+let scatterInstances: echarts.ECharts[] = [] // 个体图实例数组
 
 const formatDecimal = (val: any) => (val !== null && val !== undefined) ? Number(val).toFixed(2) : '0.00'
 
 /** 获取课程基本信息 */
 const getBaseInfo = async () => {
-    const data = await CourseInfoApi.getCourseInfo(props.courseId)
-    data.majorType = getDictLabel(DICT_TYPE.NMT_MAJOR_TYPE, data.majorType)
-    data.courseType = getDictLabel(DICT_TYPE.NMT_COURSE_TYPE, data.courseType)
-    data.courseProperty = getDictLabel(DICT_TYPE.NMT_COURSE_PROPERTY, data.courseProperty)
-    data.term = getDictLabel(DICT_TYPE.NMT_TERM, data.term)
-    courseDetail.value = data
-    const classData = await TeachClassApi.getTeachClass(props.classId)
-    teachClassDetail.value = { className: classData.name, totalNumber: classData.totalNumber }
+  const data = await CourseInfoApi.getCourseInfo(props.courseId)
+  data.majorType = getDictLabel(DICT_TYPE.NMT_MAJOR_TYPE, data.majorType)
+  data.courseType = getDictLabel(DICT_TYPE.NMT_COURSE_TYPE, data.courseType)
+  data.courseProperty = getDictLabel(DICT_TYPE.NMT_COURSE_PROPERTY, data.courseProperty)
+  data.term = getDictLabel(DICT_TYPE.NMT_TERM, data.term)
+  courseDetail.value = data
+  const classData = await TeachClassApi.getTeachClass(props.classId)
+  teachClassDetail.value = { className: classData.name, totalNumber: classData.totalNumber }
 }
 
 /** 获取总评成绩统计 */
 const getScoreInfo = async () => {
-    const data = await AchievementEvaluationApi.getCourseOverallScore(props.courseId, props.classId)
-    scoreStats.maxScore = formatDecimal(data.max)
-    scoreStats.minScore = formatDecimal(data.min)
-    scoreStats.avgScore = formatDecimal(data.avg)
-    distribution.value = ['90-100', '80-89', '70-79', '60-69', '≤59'].map(range => ({
-        range, percent: data[range] || '0.0'
-    }))
+  const data = await AchievementEvaluationApi.getCourseOverallScore(props.courseId, props.classId)
+  scoreStats.maxScore = formatDecimal(data.max)
+  scoreStats.minScore = formatDecimal(data.min)
+  scoreStats.avgScore = formatDecimal(data.avg)
+  distribution.value = ['90-100', '80-89', '70-79', '60-69', '≤59'].map(range => ({
+    range, percent: data[range] || '0.0'
+  }))
 }
 
 /** 获取核心达成度数据 */
 const getAchievementData = async () => {
-    const achRes = await AchievementEvaluationApi.getObjectiveAchievementEvaluation(props.courseId, props.classId)
-    achievementList.value = achRes.courseObjRateList || []
-    rawStuObjRateList.value = achRes.stuObjRateList || []
-    //达成度评价内容
-    if(achRes.achiEval){
-      var achiEval = achRes.achiEval;
-      // 1. 映射后端字段 (初次进入可能为空，则使用空字符串)
-      reportId.value = achiEval.id
-      problemAnalysis.value = achiEval.problemAnalysis || ''
-      improvementPlan.value = achiEval.improvementPlan || ''
-      overallComment.value = achiEval.overallComment || ''
-      // 2. 查看课程目标达成度评价 (individualAnalysis)
-      if (reportId.value) {
-        const evaluationRes = await ObjectiveEvaluationApi.getByAchievementEvaluation(reportId.value)
-        if (Array.isArray(evaluationRes) && evaluationRes.length > 0) {
-          // 遍历后端返回的列表，按目标 ID 存入 individualAnalysis 对象
-          evaluationRes.forEach(item => {
-            if (item.objectiveId && item.comment) {
-              // key 为目标 ID，value 为评价内容
-              individualAnalysis[item.objectiveId] = item.comment
-            }
-          })
-        }
+  const achRes = await AchievementEvaluationApi.getObjectiveAchievementEvaluation(props.courseId, props.classId)
+  achievementList.value = achRes.courseObjRateList || []
+  rawStuObjRateList.value = achRes.stuObjRateList || []
+
+  if(achRes.achiEval){
+    var achiEval = achRes.achiEval;
+    reportId.value = achiEval.id
+    problemAnalysis.value = achiEval.problemAnalysis || ''
+    improvementPlan.value = achiEval.improvementPlan || ''
+    overallComment.value = achiEval.overallComment || ''
+    if (reportId.value) {
+      const evaluationRes = await ObjectiveEvaluationApi.getByAchievementEvaluation(reportId.value)
+      if (Array.isArray(evaluationRes) && evaluationRes.length > 0) {
+        evaluationRes.forEach(item => {
+          if (item.objectiveId && item.comment) {
+            individualAnalysis[item.objectiveId] = item.comment
+          }
+        })
       }
     }
-    // 表格合并逻辑
-    const spans: number[] = []
-    let pos = 0
-    achievementList.value.forEach((item, i) => {
-        if (i === 0) { spans.push(1); pos = 0 }
-        else if (item.objectiveId === achievementList.value[i - 1].objectiveId) {
-            spans[pos] += 1; spans.push(0)
-        } else { spans.push(1); pos = i }
-    })
-    spanMap.value = spans
+  }
 
-    uniqueObjectives.value = achievementList.value.filter((item, index, self) =>
-        index === self.findIndex((t) => t.objectiveId === item.objectiveId)
-    ).map(i => ({
-        id: i.objectiveId,
-        name: i.objectiveName,
-        expect: Number(i.expectValue || 0),
-        totalRate: Number(i.totalObjRate || 0)
-    }))
+  const spans: number[] = []
+  let pos = 0
+  achievementList.value.forEach((item, i) => {
+    if (i === 0) { spans.push(1); pos = 0 }
+    else if (item.objectiveId === achievementList.value[i - 1].objectiveId) {
+      spans[pos] += 1; spans.push(0)
+    } else { spans.push(1); pos = i }
+  })
+  spanMap.value = spans
 
-    initOverallChart()
+  uniqueObjectives.value = achievementList.value.filter((item, index, self) =>
+    index === self.findIndex((t) => t.objectiveId === item.objectiveId)
+  ).map(i => ({
+    id: i.objectiveId,
+    name: i.objectiveName,
+    expect: Number(i.expectValue || 0),
+    totalRate: Number(i.totalObjRate || 0)
+  }))
 
-    // 生成默认文本逻辑 (仅当数据库无值时)
-    if (!overallComment.value) {
-        const failed = uniqueObjectives.value.find(o => o.totalRate < o.expect)
-        overallComment.value = failed ? `分析显示，${failed.name}达成度为${failed.totalRate.toFixed(2)}，未达到预期。` : '各指标达成度均符合预期要求。'
-    }
+  initOverallChart()
 
-    initScatterCharts()
+  if (!overallComment.value) {
+    const failed = uniqueObjectives.value.find(o => o.totalRate < o.expect)
+    overallComment.value = failed ? `分析显示，${failed.name}达成度为${failed.totalRate.toFixed(2)}，未达到预期。` : '各指标达成度均符合预期要求。'
+  }
+
+  initScatterCharts()
 }
 
-/** 需求4：编辑/保存逻辑切换 */
+/** 编辑/保存逻辑 */
 const toggleEdit = async () => {
-    if (isEdit.value) {
-        try {
-            loading.value = true
-            // 构造后端 AchievementEvaluationEx 对象
-            const payload: AchievementEvaluationEx = {
-                id: reportId.value, // 后端根据此ID判断新增或更新
-                courseId: props.courseId,
-                classId: props.classId,
-                overallComment: overallComment.value,
-                problemAnalysis: problemAnalysis.value,
-                improvementPlan: improvementPlan.value,
-                objectiveEvaluations: JSON.stringify(individualAnalysis) // 转为字符串
-            }
-
-            //达成度id
-            const achiEvalId = await AchievementEvaluationApi.saveAchievementEvaluation(payload)
-            if (achiEvalId) reportId.value = achiEvalId
-            ElMessage.success('保存成功')
-            isEdit.value = false
-        } catch (e) {
-            console.error(e)
-        } finally {
-            loading.value = false
-        }
-    } else {
-        isEdit.value = true
+  if (isEdit.value) {
+    try {
+      loading.value = true
+      const payload: AchievementEvaluationEx = {
+        id: reportId.value,
+        courseId: props.courseId,
+        classId: props.classId,
+        overallComment: overallComment.value,
+        problemAnalysis: problemAnalysis.value,
+        improvementPlan: improvementPlan.value,
+        objectiveEvaluations: JSON.stringify(individualAnalysis)
+      }
+      const achiEvalId = await AchievementEvaluationApi.saveAchievementEvaluation(payload)
+      if (achiEvalId) reportId.value = achiEvalId
+      ElMessage.success('保存成功')
+      isEdit.value = false
+    } catch (e) {
+      console.error(e)
+    } finally {
+      loading.value = false
     }
+  } else {
+    isEdit.value = true
+  }
 }
 
-/** 柱状图：需求5&6 优化内容显示 */
+/** 柱状图初始化 */
 const initOverallChart = () => {
-    overallChartOption.value = {
-        tooltip: { trigger: 'axis' },
-        legend: { bottom: 0 },
-        // 需求6：containLabel 确保轴标签不溢出
-        grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
-        xAxis: { type: 'category', data: uniqueObjectives.value.map(o => o.name) },
-        yAxis: { type: 'value', min: 0, max: 1 },
-        series: [
-            {
-                name: '达成值', type: 'bar', barWidth: 35,
-                data: uniqueObjectives.value.map(o => o.totalRate),
-                itemStyle: { color: '#15c3c6' },
-                // 需求5：图中显示数据
-                label: { show: true, position: 'top', formatter: (params: any) => params.value.toFixed(2) }
-            },
-            {
-                name: '期望值', type: 'bar', barWidth: 35,
-                data: uniqueObjectives.value.map(o => o.expect),
-                itemStyle: { color: '#b2a5e7' },
-                // 需求5：图中显示数据
-                label: { show: true, position: 'top', formatter: (params: any) => params.value.toFixed(2) }
-            }
-        ]
-    }
+  overallChartOption.value = {
+    tooltip: { trigger: 'axis' },
+    legend: { bottom: 0 },
+    grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
+    xAxis: { type: 'category', data: uniqueObjectives.value.map(o => o.name) },
+    yAxis: { type: 'value', min: 0, max: 1 },
+    series: [
+      {
+        name: '达成值', type: 'bar', barWidth: 35,
+        data: uniqueObjectives.value.map(o => o.totalRate),
+        itemStyle: { color: '#15c3c6' },
+        label: { show: true, position: 'top', formatter: (params: any) => params.value.toFixed(2) }
+      },
+      {
+        name: '期望值', type: 'bar', barWidth: 35,
+        data: uniqueObjectives.value.map(o => o.expect),
+        itemStyle: { color: '#b2a5e7' },
+        label: { show: true, position: 'top', formatter: (params: any) => params.value.toFixed(2) }
+      }
+    ]
+  }
 }
 
 /** 散点图初始化 */
 const initScatterCharts = async () => {
-    await nextTick()
-    scatterInstances.forEach(ins => ins.dispose())
-    scatterInstances = []
-    uniqueObjectives.value.forEach(obj => {
-        const dom = scatterRefs[obj.id]
-        if (!dom) return
-        const chart = echarts.init(dom)
-        const allStu = rawStuObjRateList.value.filter(s => String(s.objectiveId) === String(obj.id))
-        const displayList = onlyShowUnreached.value ? allStu.filter(s => Number(s.objRate) < obj.expect) : allStu
-        chart.setOption({
-            tooltip: { trigger: 'item', formatter: (p: any) => `<b>${p.data[0]}</b><br/>达成度: ${p.data[1].toFixed(2)}` },
-            grid: { top: '15%', bottom: '25%', left: '5%', right: '5%', containLabel: true },
-            xAxis: {
-                type: 'category',
-                data: displayList.map(s => s.studentName),
-                axisLabel: { rotate: 45, interval: 0, fontSize: 11, color: '#15c3c6' },
-                axisTick: { alignWithLabel: true }
-            },
-            yAxis: { type: 'value', min: 0, max: 1, splitLine: { lineStyle: { type: 'dashed', color: '#eee' } } },
-            series: [{
-                type: 'scatter', symbolSize: 12,
-                data: displayList.map(s => [s.studentName, Number(s.objRate)]),
-                itemStyle: { color: '#15c3c6', shadowBlur: 5, shadowColor: 'rgba(21, 195, 198, 0.3)' },
-                markLine: {
-                    silent: true, symbol: 'none',
-                    label: { position: 'end', formatter: `期望值: ${obj.expect.toFixed(2)}`, color: '#F56C6C' },
-                    data: [{ yAxis: obj.expect, lineStyle: { color: '#F56C6C', type: 'dashed', width: 2 } }]
-                }
-            }]
-        })
-        scatterInstances.push(chart)
-
-        // 生成个体评价默认建议
-        if (!individualAnalysis[obj.id]) {
-            const unreachedLen = allStu.filter(s => Number(s.objRate) < obj.expect).length
-            const passRate = allStu.length ? ((allStu.length - unreachedLen) / allStu.length * 100).toFixed(2) : '0'
-            individualAnalysis[obj.id] = `该目标总体达成率为${passRate}%；未达标人数：${unreachedLen}人。`
+  await nextTick()
+  scatterInstances.forEach(ins => ins.dispose())
+  scatterInstances = []
+  uniqueObjectives.value.forEach(obj => {
+    const dom = scatterRefs[obj.id]
+    if (!dom) return
+    const chart = echarts.init(dom)
+    const allStu = rawStuObjRateList.value.filter(s => String(s.objectiveId) === String(obj.id))
+    const displayList = onlyShowUnreached.value ? allStu.filter(s => Number(s.objRate) < obj.expect) : allStu
+    chart.setOption({
+      tooltip: { trigger: 'item', formatter: (p: any) => `<b>${p.data[0]}</b><br/>达成度: ${p.data[1].toFixed(2)}` },
+      grid: { top: '15%', bottom: '25%', left: '5%', right: '5%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: displayList.map(s => s.studentName),
+        axisLabel: { rotate: 45, interval: 0, fontSize: 11, color: '#15c3c6' },
+        axisTick: { alignWithLabel: true }
+      },
+      yAxis: { type: 'value', min: 0, max: 1, splitLine: { lineStyle: { type: 'dashed', color: '#eee' } } },
+      series: [{
+        type: 'scatter', symbolSize: 12,
+        data: displayList.map(s => [s.studentName, Number(s.objRate)]),
+        itemStyle: { color: '#15c3c6', shadowBlur: 5, shadowColor: 'rgba(21, 195, 198, 0.3)' },
+        markLine: {
+          silent: true, symbol: 'none',
+          label: { position: 'end', formatter: `期望值: ${obj.expect.toFixed(2)}`, color: '#F56C6C' },
+          data: [{ yAxis: obj.expect, lineStyle: { color: '#F56C6C', type: 'dashed', width: 2 } }]
         }
+      }]
     })
+    scatterInstances.push(chart)
+
+    if (!individualAnalysis[obj.id]) {
+      const unreachedLen = allStu.filter(s => Number(s.objRate) < obj.expect).length
+      const passRate = allStu.length ? ((allStu.length - unreachedLen) / allStu.length * 100).toFixed(2) : '0'
+      individualAnalysis[obj.id] = `该目标总体达成率为${passRate}%；未达标人数：${unreachedLen}人。`
+    }
+  })
 }
 
 const objectSpanMethod = ({ rowIndex, columnIndex }: any) => {
-    if (columnIndex === 0 || columnIndex === 4) {
-        const _row = spanMap.value[rowIndex]; return _row > 0 ? { rowspan: _row, colspan: 1 } : { rowspan: 0, colspan: 0 }
-    }
+  if (columnIndex === 0 || columnIndex === 4) {
+    const _row = spanMap.value[rowIndex]; return _row > 0 ? { rowspan: _row, colspan: 1 } : { rowspan: 0, colspan: 0 }
+  }
 }
 const handleSwitchChange = () => initScatterCharts()
-const handlePrint = () => window.print()
+
+/**
+ * 核心修改：打印/导出逻辑
+ */
+const handlePrint = async () => {
+  loading.value = true;
+  try {
+    const chartImages: Record<string, string> = {};
+
+    // 1. 获取总体图 (使用 ref 获取组件内部 echarts 实例)
+    // 注意：这里尝试获取组件内部的 DOM 并转换成实例
+    const overallEl = overallChartRef.value?.$el || document.querySelector('.section .bd .echarts');
+    if (overallEl) {
+      const instance = echarts.getInstanceByDom(overallEl as HTMLElement)
+        || echarts.getInstanceByDom(overallEl.querySelector('div') as HTMLElement);
+      if (instance) {
+        chartImages['overallChart'] = instance.getDataURL({
+          type: 'jpeg', pixelRatio: 1.5, backgroundColor: '#fff'
+        });
+      }
+    }
+
+    // 2. 获取散点图 (利用已保存的实例数组)
+    scatterInstances.forEach((instance, index) => {
+      const objId = uniqueObjectives.value[index].id;
+      chartImages[`objChart_${objId}`] = instance.getDataURL({
+        type: 'jpeg', pixelRatio: 1.5, backgroundColor: '#fff'
+      });
+    });
+
+    // 3. 发送请求
+    const params = {
+      courseId: props.courseId,
+      classId: props.classId,
+      chartImages: chartImages
+    };
+
+    // 调试打印：如果这里没东西，说明前端没抓到图
+    console.log("准备发送的图片参数:", chartImages);
+
+    const res = await AchievementEvaluationApi.exportReport(params);
+    download.word(res, `${courseDetail.value.name}-${teachClassDetail.value.className}-评价报告`);
+    ElMessage.success('导出成功');
+  } catch (e) {
+    console.error('导出失败:', e);
+    ElMessage.error('导出失败');
+  } finally {
+    loading.value = false;
+  }
+};
 
 onMounted(async () => {
-    loading.value = true
-    try { await getBaseInfo(); await getScoreInfo(); await getAchievementData(); }
-    finally { loading.value = false }
-    window.addEventListener('resize', () => scatterInstances.forEach(i => i.resize()))
+  loading.value = true
+  try { await getBaseInfo(); await getScoreInfo(); await getAchievementData(); }
+  finally { loading.value = false }
+  window.addEventListener('resize', () => {
+    // 缩放时重置所有实例
+    const overallEl = overallChartRef.value?.$el;
+    if (overallEl) echarts.getInstanceByDom(overallEl)?.resize();
+    scatterInstances.forEach(i => i.resize())
+  })
 })
-onBeforeUnmount(() => { scatterInstances.forEach(ins => ins.dispose()) })
+
+onBeforeUnmount(() => {
+  scatterInstances.forEach(ins => ins.dispose())
+})
 </script>
 
 <style scoped>
+
 .report-view { padding: 20px 0; background: #f0f2f5; min-height: 100vh; }
 .report-main { width: 95%; max-width: 1400px; margin: 0 auto; position: relative; background: #fff; padding: 40px; box-shadow: 0 2px 20px rgba(0,0,0,0.05); border-radius: 8px; }
 

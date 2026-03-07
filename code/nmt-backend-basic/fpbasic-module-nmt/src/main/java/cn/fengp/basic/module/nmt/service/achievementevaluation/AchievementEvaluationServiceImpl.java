@@ -4,6 +4,7 @@ import cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil;
 import cn.fengp.basic.framework.dict.core.DictFrameworkUtils;
 import cn.fengp.basic.framework.excel.core.util.ExcelUtils;
 import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
+import cn.fengp.basic.module.nmt.controller.admin.achievementevaluation.ExportReportDTO;
 import cn.fengp.basic.module.nmt.dal.dataobject.courseinfo.CourseInfoDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.courseobjective.CourseObjectiveDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.evaluatemode.EvaluateModeDO;
@@ -20,9 +21,15 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.resource.ResourceUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.deepoove.poi.XWPFTemplate;
+import com.deepoove.poi.data.MergeCellRule;
+import com.deepoove.poi.data.Pictures;
+import com.deepoove.poi.data.Tables;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.ibatis.annotations.Param;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
 import org.springframework.util.CollectionUtils;
@@ -193,15 +200,96 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
     /**
      * 导出达成度评价报告
      *   1.填充课程基本信息(属性信息、总评成绩)
-     * @param courseId
-     * @param classId
+     *   2.课程目标达成评价计算
+     *   3.学生总体达成情况评价(图片以及内容)
+     * @param dto
      */
     @Override
-    public void exportReport(Long courseId, Long classId) throws IOException {
-        String filePath = "template/course_report_temp.docx";
+    public void exportReport(HttpServletResponse response, ExportReportDTO dto) throws IOException {
+        Long courseId = dto.getCourseId();
+        Long classId = dto.getClassId();
+        // 参数校验
+        if (Objects.isNull(courseId)){
+            throw ServiceExceptionUtil.invalidParamException("课程标识不能为空");
+        }
+        if (Objects.isNull(classId)){
+            throw ServiceExceptionUtil.invalidParamException("班级标识不能为空");
+        }
+        Map<String, Object> wordContentMap = new HashMap<>();
         // 1.填充课程基本信息(属性信息、总评成绩)
-        this.writeReportBasicData(courseId,classId, filePath);
+        this.writeReportBasicData(wordContentMap,courseId,classId);
+        // 2.课程目标达成评价计算
+        this.writeObjectiveTableData(wordContentMap,courseId,classId);
+        // 3.学生总体达成情况评价(图片以及内容)
+        this.writeOverallChart(wordContentMap, dto);
+        //导出报告
+        String filePath = "template/course_report_temp.docx";
+        WordTemplateHelper.write(response, filePath, wordContentMap, "达成度评价报告");
     }
+
+    /**
+     * 学生总体达成情况评价(图片以及内容)
+     * @param dto
+     */
+    private void writeOverallChart(Map content,ExportReportDTO dto) {
+        // 1. 模拟或获取前端传来的 Base64（测试时可以先硬编码一个）
+        String base64Str = dto.getChartImages().get("overallChart");
+        if (StringUtils.hasText(base64Str) && base64Str.contains(",")) {
+            // 解码
+            byte[] imageBytes = Base64.getDecoder().decode(base64Str.split(",")[1]);
+            // 构建图片数据
+            content.put("overallChart", Pictures.ofBytes(imageBytes)
+                    .size(450,280)  // 宽度（像素）
+                     .center()
+                    .create());
+        }
+    }
+
+    /**
+     * 课程目标达成评价表格
+     *  1.获取课程目标达成度评价业务数据
+     *  2.设置表格数据
+     *      2.1设置表头
+     *      2.2设置表格数据
+     *      2.3设置表格合并单元格
+     *          第一列相同课程目标合并
+     *          最后一列相同课程目标达成度合并
+     *  3.map加入表格参数
+     * @param content
+     */
+    private void writeObjectiveTableData(Map content,Long courseId, Long classId) {
+        //1.获取课程目标达成度评价业务数据
+        List<JSONObject> stuObjModeScoreList = achievementEvaluationMapper.getStuObjModeScoreList(courseId,classId);
+        if(CollectionUtils.isEmpty(stuObjModeScoreList)){
+            return;
+        }
+        //总体课程目标达成度
+        List<JSONObject> courseObjRateList = this.calculateCourseObjAcheRate(stuObjModeScoreList);
+
+        //2.设置表格数据
+        List<String[]> objAchieveList = new ArrayList<>();
+        //2.1设置表头
+        String[] header = {"课程目标内容", "评价依据及方式", "评价内容的目标分值", "评价内容的平均成绩", "课程目标达成度"};
+        objAchieveList.add(header);
+        //2.2设置表格数据
+        courseObjRateList.forEach(obj ->{
+            String[] item = {
+                    obj.getString("content"),//课程目标内容
+                    obj.getString("modeName"),//考核方式
+                    obj.getString("omscore"),//考核总分
+                    obj.getString("avscore"),//考核平均分
+                    obj.getString("totalObjRate")//课程目标达成度
+            };
+            objAchieveList.add(item);
+        });
+        //2.3设置表格合并单元格
+        MergeCellRule rule = WordTemplateHelper.getObjectiveMergeRule(courseObjRateList, "objectiveId");
+
+        //3.map加入表格参数
+        String[][] dataArray = objAchieveList.toArray(new String[0][]);
+        content.put("objectAchieveTable", Tables.of(dataArray).mergeRule(rule).center().create());
+    }
+
 
     /**
      * 填充课程基本信息(属性信息、总评成绩)
@@ -210,9 +298,8 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
      *  3.word填充数据
      * @param courseId
      * @param classId
-     * @param filePath
      */
-    private void writeReportBasicData(Long courseId, Long classId, String filePath) throws IOException {
+    private void writeReportBasicData(Map content,Long courseId, Long classId){
         //1.获取课程信息、教学班级信息、获取课程总评成绩
         CourseInfoDO courseInfo = courseInfoService.getCourseInfo(courseId);
         TeachClassDO teachClass = teachClassService.getTeachClass(classId);
@@ -233,37 +320,30 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
         JSONObject overallScore = getCourseOverallScore(courseId, classId);
 
         //2.map映射word字段
-        Map<String, String> content = new HashMap<>();
-        content.put("{{course_name_title}}", courseInfo.getName());
-        content.put("{{termInfo}}", courseInfo.getGrade() + "级 " + termLabel);
-        content.put("{{course_name}}", courseInfo.getName());
-        content.put("{{mode_name}}", modeName);
-        content.put("{{character_}}", courseTypeLabel);
-        content.put("{{class_name}}", teachClass.getName());
-        content.put("{{student_count}}", String.valueOf(teachClass.getTotalNumber()));
+        content.put("course_name_title", courseInfo.getName());
+        content.put("termInfo", courseInfo.getGrade() + "级 " + termLabel);
+        content.put("course_name", courseInfo.getName());
+        content.put("mode_name", modeName);
+        content.put("character_", courseTypeLabel);
+        content.put("class_name", teachClass.getName());
+        content.put("student_count", String.valueOf(teachClass.getTotalNumber()));
         //成绩最值
-        content.put("{{maxscore}}", overallScore.getString("max"));
-        content.put("{{minscore}}", overallScore.getString("min"));
-        content.put("{{avgscore}}", overallScore.getString("avg"));
+        content.put("maxscore", overallScore.getString("max"));
+        content.put("minscore", overallScore.getString("min"));
+        content.put("avgscore", overallScore.getString("avg"));
         //分数段占比
-        content.put("{{excellent_p}}", overallScore.getString("90-100"));
-        content.put("{{good_p}}", overallScore.getString("80-89"));
-        content.put("{{middle_p}}", overallScore.getString("70-79"));
-        content.put("{{pass_p}}", overallScore.getString("60-69"));
-        content.put("{{fail_p}}", overallScore.getString("≤59"));
+        content.put("excellent_p", overallScore.getString("90-100") + "%");
+        content.put("good_p", overallScore.getString("80-89") + "%");
+        content.put("middle_p", overallScore.getString("70-79") + "%");
+        content.put("pass_p", overallScore.getString("60-69") + "%");
+        content.put("fail_p", overallScore.getString("≤59") + "%");
         //分数段人数
-        content.put("{{excellent_c}}", overallScore.getString("count90"));
-        content.put("{{good_c}}", overallScore.getString("count80"));
-        content.put("{{middle_c}}", overallScore.getString("count70"));
-        content.put("{{pass_c}}", overallScore.getString("count60"));
-        content.put("{{fail_c}}", overallScore.getString("count59"));
-        content.put("{{analysisDate}}", analysisDate);
-
-        //3.word填充数据
-        try (InputStream in = ResourceUtil.getStream(filePath);
-             XWPFDocument document = new XWPFDocument(in)) {
-            WordTemplateHelper.replaceWordContent(document, content);
-        }
+        content.put("excellent_c", overallScore.getString("count90"));
+        content.put("good_c", overallScore.getString("count80"));
+        content.put("middle_c", overallScore.getString("count70"));
+        content.put("pass_c", overallScore.getString("count60"));
+        content.put("fail_c", overallScore.getString("count59"));
+        content.put("analysisDate", analysisDate);
     }
 
     /**

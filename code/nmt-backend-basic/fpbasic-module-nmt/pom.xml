@@ -48,6 +48,13 @@
             <artifactId>fpbasic-spring-boot-starter-excel</artifactId>
         </dependency>
 
+        <!--word模版相关-->
+        <dependency>
+            <groupId>com.deepoove</groupId>
+            <artifactId>poi-tl</artifactId>
+            <version>1.12.2</version>
+        </dependency>
+
     </dependencies>
 
 </project>

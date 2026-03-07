@@ -65,4 +65,8 @@ export const AchievementEvaluationApi = {
   saveAchievementEvaluation: async (data: AchievementEvaluationEx) => {
     return await request.post({ url: `/nmt/achievement-evaluation/save`, data })
   },
+  // 导出达成度评价 word
+  exportReport: async (data:any) => {
+      return await request.downloadFile({ url: `/nmt/achievement-evaluation/export-report`,data})
+  },
 }
