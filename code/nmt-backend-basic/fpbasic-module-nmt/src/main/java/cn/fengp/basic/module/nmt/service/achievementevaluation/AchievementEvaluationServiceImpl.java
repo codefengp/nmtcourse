@@ -2,9 +2,7 @@ package cn.fengp.basic.module.nmt.service.achievementevaluation;
 
 import cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil;
 import cn.fengp.basic.framework.dict.core.DictFrameworkUtils;
-import cn.fengp.basic.framework.excel.core.util.ExcelUtils;
 import cn.fengp.basic.framework.mybatis.core.query.LambdaQueryWrapperX;
-import cn.fengp.basic.module.nmt.controller.admin.achievementevaluation.ExportReportDTO;
 import cn.fengp.basic.module.nmt.dal.dataobject.courseinfo.CourseInfoDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.courseobjective.CourseObjectiveDO;
 import cn.fengp.basic.module.nmt.dal.dataobject.evaluatemode.EvaluateModeDO;
@@ -15,31 +13,19 @@ import cn.fengp.basic.module.nmt.service.courseinfo.CourseInfoService;
 import cn.fengp.basic.module.nmt.service.courseobjective.CourseObjectiveService;
 import cn.fengp.basic.module.nmt.service.evaluatemode.EvaluateModeService;
 import cn.fengp.basic.module.nmt.service.objectiveevaluation.ObjectiveEvaluationService;
-import cn.fengp.basic.module.nmt.service.studentachievement.excel.ExcelTemplateHelper;
 import cn.fengp.basic.module.nmt.service.teachclass.TeachClassService;
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.resource.ResourceUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.deepoove.poi.XWPFTemplate;
-import com.deepoove.poi.data.MergeCellRule;
-import com.deepoove.poi.data.Pictures;
-import com.deepoove.poi.data.Tables;
+import com.deepoove.poi.data.*;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.ibatis.annotations.Param;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.Resource;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
@@ -50,14 +36,12 @@ import java.util.stream.Collectors;
 import cn.fengp.basic.module.nmt.controller.admin.achievementevaluation.vo.*;
 import cn.fengp.basic.module.nmt.dal.dataobject.achievementevaluation.AchievementEvaluationDO;
 import cn.fengp.basic.framework.common.pojo.PageResult;
-import cn.fengp.basic.framework.common.pojo.PageParam;
 import cn.fengp.basic.framework.common.util.object.BeanUtils;
 
 import cn.fengp.basic.module.nmt.dal.mysql.achievementevaluation.AchievementEvaluationMapper;
 
 import static cn.fengp.basic.framework.common.exception.util.ServiceExceptionUtil.exception;
 import static cn.fengp.basic.framework.common.util.collection.CollectionUtils.convertList;
-import static cn.fengp.basic.framework.common.util.collection.CollectionUtils.diffList;
 import static cn.fengp.basic.module.nmt.enums.ErrorCodeConstants.*;
 
 /**
@@ -202,76 +186,139 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
      *   1.填充课程基本信息(属性信息、总评成绩)
      *   2.课程目标达成评价计算
      *   3.学生总体达成情况评价(图片以及内容)
-     * @param dto
+     * @param courseId
+     * @param classId
      */
     @Override
-    public void exportReport(HttpServletResponse response, ExportReportDTO dto) throws IOException {
-        Long courseId = dto.getCourseId();
-        Long classId = dto.getClassId();
-        // 参数校验
-        if (Objects.isNull(courseId)){
-            throw ServiceExceptionUtil.invalidParamException("课程标识不能为空");
-        }
-        if (Objects.isNull(classId)){
-            throw ServiceExceptionUtil.invalidParamException("班级标识不能为空");
-        }
+    public void exportReport(HttpServletResponse response, Long courseId,Long classId) throws IOException {
+        // 1.获取课程目标达成评价数据
+        JSONObject evaluationData = this.getObjectiveAchievementEvaluation(courseId, classId);
+        //学生课程目标达成度
+        List<JSONObject> stuObjRateList = evaluationData.getJSONArray("stuObjRateList").toJavaList(JSONObject.class);
+        //总体课程目标达成度
+        List<JSONObject> courseObjRateList = evaluationData.getJSONArray("courseObjRateList").toJavaList(JSONObject.class);
         Map<String, Object> wordContentMap = new HashMap<>();
         // 1.填充课程基本信息(属性信息、总评成绩)
         this.writeReportBasicData(wordContentMap,courseId,classId);
         // 2.课程目标达成评价计算
-        this.writeObjectiveTableData(wordContentMap,courseId,classId);
+        this.writeObjectiveTableData(wordContentMap, courseObjRateList);
         // 3.学生总体达成情况评价(图片以及内容)
-        this.writeOverallChart(wordContentMap, dto);
+        this.writeOverallChart(wordContentMap, courseObjRateList);
+        // 4.学生个体达成情况评价(每个课程目标图片以及内容)
+        this.writeObjectivesChart(wordContentMap, courseObjRateList,stuObjRateList);
         //导出报告
         String filePath = "template/course_report_temp.docx";
         WordTemplateHelper.write(response, filePath, wordContentMap, "达成度评价报告");
     }
 
     /**
-     * 学生总体达成情况评价(图片以及内容)
-     * @param dto
+     * 学生个体每个课程目标散点图
+     * @param wordContentMap
+     * @param courseObjRateList
+     * @param stuObjRateList
      */
-    private void writeOverallChart(Map content,ExportReportDTO dto) {
-        // 1. 模拟或获取前端传来的 Base64（测试时可以先硬编码一个）
-        String base64Str = dto.getChartImages().get("overallChart");
-        if (StringUtils.hasText(base64Str) && base64Str.contains(",")) {
-            // 解码
-            byte[] imageBytes = Base64.getDecoder().decode(base64Str.split(",")[1]);
-            // 构建图片数据
-            content.put("overallChart", Pictures.ofBytes(imageBytes)
-                    .size(450,280)  // 宽度（像素）
-                     .center()
-                    .create());
+    private void writeObjectivesChart(Map<String, Object> wordContentMap, List<JSONObject> courseObjRateList, List<JSONObject> stuObjRateList) {
+        // 1. 初始化用于 Word 模板循环的列表
+        List<Map<String, Object>> objectivesList = new ArrayList<>();
+        // 2. 课程目标去重（推荐使用 LinkedHashSet 保持课程目标的先后顺序）
+        Set<String> seen = new LinkedHashSet<>();
+        List<JSONObject> diffCourseRateList = courseObjRateList.stream()
+                .filter(obj -> seen.add(obj.getString("objectiveId")))
+                .collect(Collectors.toList());
+        //按照课程目标分组
+        for (JSONObject course : diffCourseRateList) {
+            Map<String, Object> item = new HashMap<>();
+            String objId = course.getString("objectiveId");
+            // 3. 筛选当前目标下的学生数据
+            List<JSONObject> currentStuList = stuObjRateList.stream()
+                    .filter(stu -> objId.equals(stu.getString("objectiveId")))
+                    .collect(Collectors.toList());
+            if (CollectionUtils.isEmpty(currentStuList)){
+                throw ServiceExceptionUtil.invalidParamException("课程目标达成度评价数据异常");
+            }
+            // 4. 准备 X 轴数据（学生姓名）
+            String[] studentNames = currentStuList.stream()
+                    .map(s -> s.getString("studentName"))
+                    .toArray(String[]::new);
+            // 5. 准备 Y 轴数据（实际达成度）
+            Double[] objRates = currentStuList.stream()
+                    .map(s -> s.getDouble("objRate"))
+                    .toArray(Double[]::new);
+            // 6. 构造期望值线数组：长度必须与学生人数一致，值全为该目标的期望值
+            Double expectValue = course.getDouble("expectValue");
+            Double[] expectRates = new Double[currentStuList.size()];
+            Arrays.fill(expectRates, expectValue != null ? expectValue : 0.0);
+            // 7. 构造原生散点图
+            // 注意：使用 ofMultiSeriesScatter 明确指定为散点图类型
+            ChartMultiSeriesRenderData scatter = Charts
+                    .ofMultiSeries("课程目标 " + course.getString("objectiveName") + "分布图", studentNames)
+                    .addSeries("实际达成度", objRates)
+                    .addSeries("目标期望值", expectRates)
+                    .create();
+            // 8. 组装单条循环数据
+            item.put("objName", course.getString("objectiveName"));
+            item.put("scatterChart", scatter); // 对应 Word 模板中的 {{scatterChart}}
+            objectivesList.add(item);
         }
+        // 9. 将整个列表放入根 Map，对应模板中的 {{?objectives}}
+        wordContentMap.put("objectives", objectivesList);
+    }
+
+    /**
+     * 学生总体达成情况评价(图片以及内容)
+     *     1.设置柱状图参数
+     *     2.生成柱状图片
+     * @param courseObjRateList
+     */
+    private void writeOverallChart(Map content,List<JSONObject> courseObjRateList) {
+        //1.设置柱状图参数
+        //x轴名称列表
+        List<String> xAxisNameList = new ArrayList<>();
+        //目标达成度
+        List<BigDecimal> totalRateList = new ArrayList<>();
+        //目标期望达成度
+        List<BigDecimal> expectRateList = new ArrayList<>();
+        for (JSONObject obj : courseObjRateList) {
+            //去重
+            if(xAxisNameList.contains(obj.getString("objectiveName"))){
+                continue;
+            }
+            xAxisNameList.add(obj.getString("objectiveName"));
+            totalRateList.add(obj.getBigDecimal("totalObjRate"));
+            expectRateList.add(obj.getBigDecimal("expectValue"));
+        }
+        if(CollectionUtils.isEmpty(xAxisNameList)){
+            throw ServiceExceptionUtil.invalidParamException("目标数据为空,柱状图生成失败");
+        }
+        // 2. 创建原生多系列柱状图
+        ChartMultiSeriesRenderData chart = Charts
+                .ofMultiSeries("课程目标达成情况", xAxisNameList.toArray(new String[0]))
+                .addSeries("课程目标达成度", totalRateList.toArray(new BigDecimal[0]))
+                .addSeries("目标期望达成度", expectRateList.toArray(new BigDecimal[0]))
+                .create();
+
+        // 3. 放入填充模型
+        content.put("overallChart", chart);
     }
 
     /**
      * 课程目标达成评价表格
-     *  1.获取课程目标达成度评价业务数据
-     *  2.设置表格数据
-     *      2.1设置表头
-     *      2.2设置表格数据
-     *      2.3设置表格合并单元格
+     *  1.设置表格数据
+     *      1.1设置表头
+     *      1.2设置表格数据
+     *      1.3设置表格合并单元格
      *          第一列相同课程目标合并
      *          最后一列相同课程目标达成度合并
-     *  3.map加入表格参数
+     *  2.map加入表格参数
      * @param content
      */
-    private void writeObjectiveTableData(Map content,Long courseId, Long classId) {
-        //1.获取课程目标达成度评价业务数据
-        List<JSONObject> stuObjModeScoreList = achievementEvaluationMapper.getStuObjModeScoreList(courseId,classId);
-        if(CollectionUtils.isEmpty(stuObjModeScoreList)){
-            return;
-        }
-        //总体课程目标达成度
-        List<JSONObject> courseObjRateList = this.calculateCourseObjAcheRate(stuObjModeScoreList);
-
-        //2.设置表格数据
+    private void writeObjectiveTableData(Map content,List<JSONObject> courseObjRateList) {
+        //1.设置表格数据
         List<String[]> objAchieveList = new ArrayList<>();
-        //2.1设置表头
+        //1.1设置表头
         String[] header = {"课程目标内容", "评价依据及方式", "评价内容的目标分值", "评价内容的平均成绩", "课程目标达成度"};
         objAchieveList.add(header);
-        //2.2设置表格数据
+        //1.2设置表格数据
         courseObjRateList.forEach(obj ->{
             String[] item = {
                     obj.getString("content"),//课程目标内容
@@ -282,7 +329,7 @@ public class AchievementEvaluationServiceImpl implements AchievementEvaluationSe
             };
             objAchieveList.add(item);
         });
-        //2.3设置表格合并单元格
+        //1.3设置表格合并单元格
         MergeCellRule rule = WordTemplateHelper.getObjectiveMergeRule(courseObjRateList, "objectiveId");
 
         //3.map加入表格参数

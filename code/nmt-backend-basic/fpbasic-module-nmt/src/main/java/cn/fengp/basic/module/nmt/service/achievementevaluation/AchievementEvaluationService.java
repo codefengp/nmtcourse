@@ -3,14 +3,12 @@ package cn.fengp.basic.module.nmt.service.achievementevaluation;
 import java.io.IOException;
 import java.util.*;
 
-import cn.fengp.basic.module.nmt.controller.admin.achievementevaluation.ExportReportDTO;
 import com.alibaba.fastjson.JSONObject;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.*;
 import cn.fengp.basic.module.nmt.controller.admin.achievementevaluation.vo.*;
 import cn.fengp.basic.module.nmt.dal.dataobject.achievementevaluation.AchievementEvaluationDO;
 import cn.fengp.basic.framework.common.pojo.PageResult;
-import cn.fengp.basic.framework.common.pojo.PageParam;
 
 /**
  * 达成度评价 Service 接口
@@ -70,5 +68,5 @@ public interface AchievementEvaluationService {
 
     Long saveAchievementEvaluation(AchievementEvaluationSaveExReqVO createReqVO);
 
-    void exportReport(HttpServletResponse response, ExportReportDTO dto) throws IOException;
+    void exportReport(HttpServletResponse response, Long courseId,Long classId) throws IOException;
 }

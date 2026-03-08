@@ -1,151 +1,151 @@
 <template>
-    <div class="report-view" v-loading="loading">
-        <div class="report-main">
-            <div class="side-toolbar no-print">
-                <div class="sticky-box">
-                    <el-button circle class="prime-btn" @click="emit('back')" title="返回">
-                        <el-icon><Back /></el-icon>
-                    </el-button>
+  <div class="report-view" v-loading="loading">
+    <div class="report-main">
+      <div class="side-toolbar no-print">
+        <div class="sticky-box">
+          <el-button circle class="prime-btn" @click="emit('back')" title="返回">
+            <el-icon><Back /></el-icon>
+          </el-button>
 
-                    <el-button
-                            circle
-                            class="prime-btn"
-                            :type="isEdit ? 'success' : 'primary'"
-                            @click="toggleEdit"
-                            :title="isEdit ? '保存' : '编辑'"
-                    >
-                        <el-icon v-if="!isEdit"><Edit /></el-icon>
-                        <el-icon v-else><Check /></el-icon>
-                    </el-button>
+          <el-button
+            circle
+            class="prime-btn"
+            :type="isEdit ? 'success' : 'primary'"
+            @click="toggleEdit"
+            :title="isEdit ? '保存' : '编辑'"
+          >
+            <el-icon v-if="!isEdit"><Edit /></el-icon>
+            <el-icon v-else><Check /></el-icon>
+          </el-button>
 
-                    <el-button circle class="prime-btn" @click="handlePrint" title="打印">
-                        <el-icon><Printer /></el-icon>
-                    </el-button>
-                </div>
-            </div>
+          <el-button circle class="prime-btn" @click="handlePrint" title="打印">
+            <el-icon><Printer /></el-icon>
+          </el-button>
+        </div>
+      </div>
 
-            <h2 class="title">{{ courseDetail.name }}课程达成评价报告</h2>
+      <h2 class="title">{{ courseDetail.name }}课程达成评价报告</h2>
 
-            <div class="section">
-                <div class="hd"><i class="tag"></i>课程基本信息</div>
-                <div class="bd grid5">
-                    <span>课程编码：{{ courseDetail.number || '-' }}</span>
-                    <span>课程名称：{{ courseDetail.name || '-' }}</span>
-                    <span>课程类别：{{ courseDetail.courseType || '-' }}</span>
-                    <span>课程性质：{{ courseDetail.courseProperty || '-' }}</span>
-                    <span>学时/学分：{{ courseDetail.courseHour }}学时/{{ courseDetail.courseScore }}学分</span>
-                    <span>开课学年：{{ courseDetail.grade || '-' }}</span>
-                    <span>开课学期：{{ courseDetail.term || '-' }}</span>
-                    <span>上课班级：{{ teachClassDetail.className || '-' }}</span>
-                    <span>考核人数：{{ teachClassDetail.totalNumber || 0 }}</span>
-                    <span>负责教师：{{ courseDetail.teacherName || '-' }}</span>
-                </div>
-            </div>
+      <div class="section">
+        <div class="hd"><i class="tag"></i>课程基本信息</div>
+        <div class="bd grid5">
+          <span>课程编码：{{ courseDetail.number || '-' }}</span>
+          <span>课程名称：{{ courseDetail.name || '-' }}</span>
+          <span>课程类别：{{ courseDetail.courseType || '-' }}</span>
+          <span>课程性质：{{ courseDetail.courseProperty || '-' }}</span>
+          <span>学时/学分：{{ courseDetail.courseHour }}学时/{{ courseDetail.courseScore }}学分</span>
+          <span>开课学年：{{ courseDetail.grade || '-' }}</span>
+          <span>开课学期：{{ courseDetail.term || '-' }}</span>
+          <span>上课班级：{{ teachClassDetail.className || '-' }}</span>
+          <span>考核人数：{{ teachClassDetail.totalNumber || 0 }}</span>
+          <span>负责教师：{{ courseDetail.teacherName || '-' }}</span>
+        </div>
+      </div>
 
-            <div class="section">
-                <div class="hd"><i class="tag"></i>课程总评成绩</div>
-                <div class="bd">
-                    <div class="score-row">
-                        <span>最高分：{{ scoreStats.maxScore }}</span>
-                        <span>最低分：{{ scoreStats.minScore }}</span>
-                        <span>平均分：{{ scoreStats.avgScore }}</span>
-                    </div>
-                    <div class="grid5 mt15">
+      <div class="section">
+        <div class="hd"><i class="tag"></i>课程总评成绩</div>
+        <div class="bd">
+          <div class="score-row">
+            <span>最高分：{{ scoreStats.maxScore }}</span>
+            <span>最低分：{{ scoreStats.minScore }}</span>
+            <span>平均分：{{ scoreStats.avgScore }}</span>
+          </div>
+          <div class="grid5 mt15">
             <span v-for="item in distribution" :key="item.range">
               {{ item.range }}成绩占比：{{ item.percent }}%
             </span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="hd"><i class="tag"></i>课程目标达成评价结果</div>
-                <div class="bd no-padding">
-                    <el-table :data="achievementList" :span-method="objectSpanMethod" border header-cell-class-name="table-header">
-                        <el-table-column label="课程目标" min-width="200">
-                            <template #default="scope">{{ scope.row.objectiveName }}: {{ scope.row.content }}</template>
-                        </el-table-column>
-                        <el-table-column label="评价依据及方式" align="center" width="220">
-                            <template #default="scope">{{ scope.row.modeName }}(占{{ formatDecimal(scope.row.weight) }}%)</template>
-                        </el-table-column>
-                        <el-table-column label="评价内容的目标分值" align="center" width="160">
-                            <template #default="scope">{{ formatDecimal(scope.row.omscore) }}</template>
-                        </el-table-column>
-                        <el-table-column label="评价内容的平均成绩" align="center" width="160">
-                            <template #default="scope">{{ formatDecimal(scope.row.avscore) }}</template>
-                        </el-table-column>
-                        <el-table-column label="课程目标达成度" align="center" width="140">
-                            <template #default="scope">{{ formatDecimal(scope.row.totalObjRate) }}</template>
-                        </el-table-column>
-                    </el-table>
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="hd"><i class="tag"></i>学生总体达成情况评价</div>
-                <div class="bd">
-                    <Echart ref="overallChartRef" :options="overallChartOption" height="450px" v-if="overallChartOption.xAxis" />
-                    <el-input
-                            type="textarea"
-                            v-model="overallComment"
-                            :rows="3"
-                            :disabled="!isEdit"
-                            placeholder="请输入总体达成情况分析"
-                            class="mt15"
-                    />
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="hd">
-                    <i class="tag"></i>学生个体达成情况评价
-                    <el-switch
-                            v-model="onlyShowUnreached"
-                            active-text="只显示未达标学生"
-                            style="margin-left: 20px"
-                            @change="handleSwitchChange"
-                    />
-                </div>
-                <div v-for="obj in uniqueObjectives" :key="obj.id" class="bd" style="margin-bottom: 25px">
-                    <div class="chart-title">{{ obj.name }}学生个体达成情况分布图</div>
-                    <div :ref="el => { if (el) scatterRefs[obj.id] = el }" style="width: 100%; height: 420px;"></div>
-                    <el-input
-                            type="textarea"
-                            v-model="individualAnalysis[obj.id]"
-                            :rows="3"
-                            :disabled="!isEdit"
-                            class="mt15"
-                    />
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="hd"><i class="tag"></i>存在问题</div>
-                <div class="simple-bd">
-                    <el-input
-                            type="textarea"
-                            v-model="problemAnalysis"
-                            :rows="4"
-                            :disabled="!isEdit"
-                            placeholder="尚未填写存在问题"
-                    />
-                </div>
-            </div>
-
-            <div class="section">
-                <div class="hd"><i class="tag"></i>课程教学质量的持续改进</div>
-                <div class="simple-bd">
-                    <el-input
-                            type="textarea"
-                            v-model="improvementPlan"
-                            :rows="4"
-                            :disabled="!isEdit"
-                            placeholder="尚未填写持续改进计划"
-                    />
-                </div>
-            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="section">
+        <div class="hd"><i class="tag"></i>课程目标达成评价结果</div>
+        <div class="bd no-padding">
+          <el-table :data="achievementList" :span-method="objectSpanMethod" border header-cell-class-name="table-header">
+            <el-table-column label="课程目标" min-width="200">
+              <template #default="scope">{{ scope.row.objectiveName }}: {{ scope.row.content }}</template>
+            </el-table-column>
+            <el-table-column label="评价依据及方式" align="center" width="220">
+              <template #default="scope">{{ scope.row.modeName }}(占{{ formatDecimal(scope.row.weight) }}%)</template>
+            </el-table-column>
+            <el-table-column label="评价内容的目标分值" align="center" width="160">
+              <template #default="scope">{{ formatDecimal(scope.row.omscore) }}</template>
+            </el-table-column>
+            <el-table-column label="评价内容的平均成绩" align="center" width="160">
+              <template #default="scope">{{ formatDecimal(scope.row.avscore) }}</template>
+            </el-table-column>
+            <el-table-column label="课程目标达成度" align="center" width="140">
+              <template #default="scope">{{ formatDecimal(scope.row.totalObjRate) }}</template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="hd"><i class="tag"></i>学生总体达成情况评价</div>
+        <div class="bd">
+          <Echart :options="overallChartOption" height="450px" v-if="overallChartOption.xAxis" />
+          <el-input
+            type="textarea"
+            v-model="overallComment"
+            :rows="3"
+            :disabled="!isEdit"
+            placeholder="请输入总体达成情况分析"
+            class="mt15"
+          />
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="hd">
+          <i class="tag"></i>学生个体达成情况评价
+          <el-switch
+            v-model="onlyShowUnreached"
+            active-text="只显示未达标学生"
+            style="margin-left: 20px"
+            @change="handleSwitchChange"
+          />
+        </div>
+        <div v-for="obj in uniqueObjectives" :key="obj.id" class="bd" style="margin-bottom: 25px">
+          <div class="chart-title">{{ obj.name }}学生个体达成情况分布图</div>
+          <div :ref="el => { if (el) scatterRefs[obj.id] = el }" style="width: 100%; height: 420px;"></div>
+          <el-input
+            type="textarea"
+            v-model="individualAnalysis[obj.id]"
+            :rows="3"
+            :disabled="!isEdit"
+            class="mt15"
+          />
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="hd"><i class="tag"></i>存在问题</div>
+        <div class="simple-bd">
+          <el-input
+            type="textarea"
+            v-model="problemAnalysis"
+            :rows="4"
+            :disabled="!isEdit"
+            placeholder="尚未填写存在问题"
+          />
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="hd"><i class="tag"></i>课程教学质量的持续改进</div>
+        <div class="simple-bd">
+          <el-input
+            type="textarea"
+            v-model="improvementPlan"
+            :rows="4"
+            :disabled="!isEdit"
+            placeholder="尚未填写持续改进计划"
+          />
+        </div>
+      </div>
     </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -163,10 +163,10 @@ import download from "@/utils/download";
 const emit = defineEmits(['back'])
 const props = defineProps<{ courseId: number; classId: number }>()
 const loading = ref(false)
-const isEdit = ref(false)
+const isEdit = ref(false) // 需求4：控制编辑状态
 
 // 业务变量
-const reportId = ref<number>()
+const reportId = ref<number>() // 存储后端主键ID
 const courseDetail = ref<any>({})
 const teachClassDetail = ref<any>({ className: '', totalNumber: 0 })
 const scoreStats = reactive({ maxScore: '0.00', minScore: '0.00', avgScore: '0.00' })
@@ -177,18 +177,15 @@ const rawStuObjRateList = ref<any[]>([])
 const uniqueObjectives = ref<any[]>([])
 const overallChartOption = ref<any>({})
 
-// 输入框对应字段
-const overallComment = ref('')
-const problemAnalysis = ref('')
-const improvementPlan = ref('')
-const individualAnalysis = reactive<Record<string, string>>({})
+// 输入框对应字段 (适配后端对象 AchievementEvaluationEx)
+const overallComment = ref('') // 总体评价
+const problemAnalysis = ref('') // 存在问题
+const improvementPlan = ref('') // 持续改进
+const individualAnalysis = reactive<Record<string, string>>({}) // 个体目标分析Map
 
 const onlyShowUnreached = ref(false)
 const scatterRefs = reactive<Record<string, any>>({})
-
-// --- 关键修改：定义引用变量 ---
-const overallChartRef = ref<any>(null) // 总体图组件引用
-let scatterInstances: echarts.ECharts[] = [] // 个体图实例数组
+let scatterInstances: echarts.ECharts[] = []
 
 const formatDecimal = (val: any) => (val !== null && val !== undefined) ? Number(val).toFixed(2) : '0.00'
 
@@ -220,25 +217,29 @@ const getAchievementData = async () => {
   const achRes = await AchievementEvaluationApi.getObjectiveAchievementEvaluation(props.courseId, props.classId)
   achievementList.value = achRes.courseObjRateList || []
   rawStuObjRateList.value = achRes.stuObjRateList || []
-
+  //达成度评价内容
   if(achRes.achiEval){
     var achiEval = achRes.achiEval;
+    // 1. 映射后端字段 (初次进入可能为空，则使用空字符串)
     reportId.value = achiEval.id
     problemAnalysis.value = achiEval.problemAnalysis || ''
     improvementPlan.value = achiEval.improvementPlan || ''
     overallComment.value = achiEval.overallComment || ''
+    // 2. 查看课程目标达成度评价 (individualAnalysis)
     if (reportId.value) {
       const evaluationRes = await ObjectiveEvaluationApi.getByAchievementEvaluation(reportId.value)
       if (Array.isArray(evaluationRes) && evaluationRes.length > 0) {
+        // 遍历后端返回的列表，按目标 ID 存入 individualAnalysis 对象
         evaluationRes.forEach(item => {
           if (item.objectiveId && item.comment) {
+            // key 为目标 ID，value 为评价内容
             individualAnalysis[item.objectiveId] = item.comment
           }
         })
       }
     }
   }
-
+  // 表格合并逻辑
   const spans: number[] = []
   let pos = 0
   achievementList.value.forEach((item, i) => {
@@ -260,6 +261,7 @@ const getAchievementData = async () => {
 
   initOverallChart()
 
+  // 生成默认文本逻辑 (仅当数据库无值时)
   if (!overallComment.value) {
     const failed = uniqueObjectives.value.find(o => o.totalRate < o.expect)
     overallComment.value = failed ? `分析显示，${failed.name}达成度为${failed.totalRate.toFixed(2)}，未达到预期。` : '各指标达成度均符合预期要求。'
@@ -268,20 +270,23 @@ const getAchievementData = async () => {
   initScatterCharts()
 }
 
-/** 编辑/保存逻辑 */
+/** 需求4：编辑/保存逻辑切换 */
 const toggleEdit = async () => {
   if (isEdit.value) {
     try {
       loading.value = true
+      // 构造后端 AchievementEvaluationEx 对象
       const payload: AchievementEvaluationEx = {
-        id: reportId.value,
+        id: reportId.value, // 后端根据此ID判断新增或更新
         courseId: props.courseId,
         classId: props.classId,
         overallComment: overallComment.value,
         problemAnalysis: problemAnalysis.value,
         improvementPlan: improvementPlan.value,
-        objectiveEvaluations: JSON.stringify(individualAnalysis)
+        objectiveEvaluations: JSON.stringify(individualAnalysis) // 转为字符串
       }
+
+      //达成度id
       const achiEvalId = await AchievementEvaluationApi.saveAchievementEvaluation(payload)
       if (achiEvalId) reportId.value = achiEvalId
       ElMessage.success('保存成功')
@@ -296,11 +301,12 @@ const toggleEdit = async () => {
   }
 }
 
-/** 柱状图初始化 */
+/** 柱状图：需求5&6 优化内容显示 */
 const initOverallChart = () => {
   overallChartOption.value = {
     tooltip: { trigger: 'axis' },
     legend: { bottom: 0 },
+    // 需求6：containLabel 确保轴标签不溢出
     grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
     xAxis: { type: 'category', data: uniqueObjectives.value.map(o => o.name) },
     yAxis: { type: 'value', min: 0, max: 1 },
@@ -309,12 +315,14 @@ const initOverallChart = () => {
         name: '达成值', type: 'bar', barWidth: 35,
         data: uniqueObjectives.value.map(o => o.totalRate),
         itemStyle: { color: '#15c3c6' },
+        // 需求5：图中显示数据
         label: { show: true, position: 'top', formatter: (params: any) => params.value.toFixed(2) }
       },
       {
         name: '期望值', type: 'bar', barWidth: 35,
         data: uniqueObjectives.value.map(o => o.expect),
         itemStyle: { color: '#b2a5e7' },
+        // 需求5：图中显示数据
         label: { show: true, position: 'top', formatter: (params: any) => params.value.toFixed(2) }
       }
     ]
@@ -355,6 +363,7 @@ const initScatterCharts = async () => {
     })
     scatterInstances.push(chart)
 
+    // 生成个体评价默认建议
     if (!individualAnalysis[obj.id]) {
       const unreachedLen = allStu.filter(s => Number(s.objRate) < obj.expect).length
       const passRate = allStu.length ? ((allStu.length - unreachedLen) / allStu.length * 100).toFixed(2) : '0'
@@ -371,74 +380,23 @@ const objectSpanMethod = ({ rowIndex, columnIndex }: any) => {
 const handleSwitchChange = () => initScatterCharts()
 
 /**
- * 核心修改：打印/导出逻辑
+ * 打印达成度报告
  */
 const handlePrint = async () => {
-  loading.value = true;
-  try {
-    const chartImages: Record<string, string> = {};
-
-    // 1. 获取总体图 (使用 ref 获取组件内部 echarts 实例)
-    // 注意：这里尝试获取组件内部的 DOM 并转换成实例
-    const overallEl = overallChartRef.value?.$el || document.querySelector('.section .bd .echarts');
-    if (overallEl) {
-      const instance = echarts.getInstanceByDom(overallEl as HTMLElement)
-        || echarts.getInstanceByDom(overallEl.querySelector('div') as HTMLElement);
-      if (instance) {
-        chartImages['overallChart'] = instance.getDataURL({
-          type: 'jpeg', pixelRatio: 1.5, backgroundColor: '#fff'
-        });
-      }
-    }
-
-    // 2. 获取散点图 (利用已保存的实例数组)
-    scatterInstances.forEach((instance, index) => {
-      const objId = uniqueObjectives.value[index].id;
-      chartImages[`objChart_${objId}`] = instance.getDataURL({
-        type: 'jpeg', pixelRatio: 1.5, backgroundColor: '#fff'
-      });
-    });
-
-    // 3. 发送请求
-    const params = {
-      courseId: props.courseId,
-      classId: props.classId,
-      chartImages: chartImages
-    };
-
-    // 调试打印：如果这里没东西，说明前端没抓到图
-    console.log("准备发送的图片参数:", chartImages);
-
-    const res = await AchievementEvaluationApi.exportReport(params);
-    download.word(res, `${courseDetail.value.name}-${teachClassDetail.value.className}-评价报告`);
-    ElMessage.success('导出成功');
-  } catch (e) {
-    console.error('导出失败:', e);
-    ElMessage.error('导出失败');
-  } finally {
-    loading.value = false;
-  }
-};
+  const res = await AchievementEvaluationApi.exportReport(props.courseId, props.classId)
+  download.word(res, courseDetail.value.name + '-' + teachClassDetail.value.className + '-课程达成评价报告')
+}
 
 onMounted(async () => {
   loading.value = true
   try { await getBaseInfo(); await getScoreInfo(); await getAchievementData(); }
   finally { loading.value = false }
-  window.addEventListener('resize', () => {
-    // 缩放时重置所有实例
-    const overallEl = overallChartRef.value?.$el;
-    if (overallEl) echarts.getInstanceByDom(overallEl)?.resize();
-    scatterInstances.forEach(i => i.resize())
-  })
+  window.addEventListener('resize', () => scatterInstances.forEach(i => i.resize()))
 })
-
-onBeforeUnmount(() => {
-  scatterInstances.forEach(ins => ins.dispose())
-})
+onBeforeUnmount(() => { scatterInstances.forEach(ins => ins.dispose()) })
 </script>
 
 <style scoped>
-
 .report-view { padding: 20px 0; background: #f0f2f5; min-height: 100vh; }
 .report-main { width: 95%; max-width: 1400px; margin: 0 auto; position: relative; background: #fff; padding: 40px; box-shadow: 0 2px 20px rgba(0,0,0,0.05); border-radius: 8px; }
 
@@ -471,9 +429,9 @@ onBeforeUnmount(() => {
 :deep(.table-header) { background-color: #f5f7fa !important; color: #303133; font-weight: bold; height: 50px; }
 
 @media print {
-    .no-print { display: none; }
-    .report-view { padding: 0; background: #fff; }
-    .report-main { width: 100%; max-width: 100%; box-shadow: none; padding: 0; }
-    .side-toolbar { display: none; }
+  .no-print { display: none; }
+  .report-view { padding: 0; background: #fff; }
+  .report-main { width: 100%; max-width: 100%; box-shadow: none; padding: 0; }
+  .side-toolbar { display: none; }
 }
 </style>
