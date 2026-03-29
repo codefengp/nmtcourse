@@ -1,0 +1,29 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="eduGradient" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2A66F6" />
+      <stop offset="1" stop-color="#2BB7A9" />
+    </linearGradient>
+    <linearGradient id="chartGradient" x1="50" y1="72" x2="82" y2="72" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FBD34D" />
+      <stop offset="1" stop-color="#F9A826" />
+    </linearGradient>
+  </defs>
+
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="url(#eduGradient)" />
+  <circle cx="100" cy="28" r="14" fill="white" fill-opacity="0.16" />
+
+  <path
+    d="M28 41.5C28 37.3579 31.3579 34 35.5 34H49.5C55.1328 34 59.4831 35.379 63 38.1371C66.5169 35.379 70.8672 34 76.5 34H90.5C94.6421 34 98 37.3579 98 41.5V86.5C98 88.9853 95.9853 91 93.5 91H76.5C71.4234 91 67.4043 92.3534 64.25 95.0603C63.5481 95.6625 62.4519 95.6625 61.75 95.0603C58.5957 92.3534 54.5766 91 49.5 91H32.5C30.0147 91 28 88.9853 28 86.5V41.5Z"
+    fill="white"
+    fill-opacity="0.95"
+  />
+
+  <path d="M63 39V93" stroke="#2A66F6" stroke-width="3.2" stroke-linecap="round" stroke-opacity="0.35" />
+
+  <rect x="48" y="67" width="7" height="15" rx="2" fill="url(#chartGradient)" />
+  <rect x="58" y="61" width="7" height="21" rx="2" fill="url(#chartGradient)" />
+  <rect x="68" y="54" width="7" height="28" rx="2" fill="url(#chartGradient)" />
+
+  <path d="M44 58L52 50L60 56L73 43" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
